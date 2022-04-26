@@ -7,6 +7,7 @@ import google.cloud.logging
 from game.boggle import BoggleGame, BogglePlayer
 import random
 import string
+import threading
 
 from os.path import dirname, join, realpath
 
@@ -35,16 +36,27 @@ send_headers = {
 # TODO: Set up concurrency through locks
 class MemoryStorage:
   def __init__(self):
+    self.lock = threading.Lock()
     self.data = dict()
 
   def set(self, room_code, boggle_game):
+    self.lock.acquire()
+    try:
       self.data[room_code] = json.dumps(boggle_game)
+    finally:
+      self.lock.release()
+
   def get(self, room_code):
-      return json.loads(self.data[room_code])
+     return json.loads(self.data[room_code])
+
   def getAndSet(self, room_code, bool_func, new_val_func):
-    if (bool_func(room_code)):
-      new_val_func(room_code)
-    pass
+    self.lock.acquire()
+    try:
+      data = json.loads(self.data[room_code])
+      if (bool_func(data)):
+        self.data[room_code] = json.dumps(new_val_func(data))
+    finally:
+      self.lock.release()
 
 
 room_storage = MemoryStorage()
