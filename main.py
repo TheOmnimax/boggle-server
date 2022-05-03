@@ -49,11 +49,14 @@ class MemoryStorage:
         GameRoom: Game room with that code
     """
     return json.loads(self.data[room_code])
+  # TODO: QUESTION: What makes for a good bool_func?
   def getAndSet(self, room_code, bool_func, new_val_func):
     if (bool_func(room_code)):
+      print('Found game!')
       game_room = self.get(room_code)
       return new_val_func(game_room)
-    pass
+    else:
+      print(f'Game room {room_code} not found')
 
 
 room_storage = MemoryStorage()
@@ -155,15 +158,26 @@ async def joinGame(request: Request):
   global room_storage
   headers = request.headers
   room_code = headers['room_code']
-  boggle_game = getGame(room_code)
-  player_id = addPlayer(room_code)
-  content = getGameParameters(boggle_game)
-  content['player_id'] = player_id
+  host_id = headers['host_id']
+
+  def jg(game_room: GameRoom):
+    boggle_game = game_room.game
+    if host_id == game_room.host_id:
+      boggle_game.addPlayer(host_id, host=True)
+      player_id = host_id
+    else:
+      player_id = genCode(8)
+      boggle_game.addPlayer(player_id)
+    content = getGameParameters(boggle_game)
+    content['player_id'] = player_id
+    return content
+
+  content = room_storage.getAndSet(room_code, roomExists, jg)
   response = JSONResponse(
     content,
     headers=send_headers
     )
-  response.status_code = 200
+  response.status_code = 201
   return response
 
 # Currently not used
@@ -188,28 +202,29 @@ async def startGame(request: Request):
   headers = request.headers
   room_code = headers['room_code']
   player_id = headers['player_id']
-  game_room = room_storage.data['room_code']
-  # boggle_game = getGame(room_code)
-  # player_data = game_room[player_id]
-  host_id = game_room.host_id
+  print(f'Player ID: {player_id}')
+  def sg(game_room: GameRoom):
+    boggle_game = game_room.game
+    print(f'Host ID: {game_room.host_id}')
+    if game_room.host_id == player_id:
+      boggle_game.startGame()
+      return True
+    else:
+      return False
 
-  if (player_id == host_id):
-    game_room.startGame(host_id)
-    response = JSONResponse(
-      {
-        'result': 'Game started',
-      },
-      headers=send_headers
-    )
-    response.status_code = 201
+  game_started = room_storage.getAndSet(room_code, roomExists, sg)
+
+  if (game_started):
+    content = {}
+    status_code = 201
   else:
-    response = JSONResponse(
-      {
-
-      },
-      headers=send_headers
-    )
-    response.status_code = 403
+    content = {}
+    status_code = 403
+  response = JSONResponse(
+    content,
+    headers=send_headers
+  )
+  response.status_code = status_code
 
   return response
 

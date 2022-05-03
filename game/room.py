@@ -12,7 +12,7 @@ class Game:
       self.host_id = id
   
   def startGame(self):
-    self.running = False
+    self.running = True
 
 class GameRoom:
   def __init__(self, room_code):
