@@ -2,6 +2,7 @@ from .board import BoardSpace, Board
 from .dice import DiceBag
 print('Running...')
 from .player import Player
+from .room import Game, GameRoom
 from collections import OrderedDict
 from enum import Enum
 
@@ -134,6 +135,8 @@ class WordReason(Enum):
   NOT_FOUND = 2
   NOT_A_WORD = 3
   SHARED_WORD = 4
+  NO_TIME = 5
+  ALREADY_ADDED = 6
 
 
 class BogglePlayer(Player):
@@ -141,17 +144,66 @@ class BogglePlayer(Player):
     super().__init__(id, name)
     self.approved_words = []
     self.rejected_words = OrderedDict()
+    self._start_time = 0
+  
+  def playerStarted(self, timestamp: int):
+    self._start_time = timestamp
+  
+  def withinTime(self, entered_time: int, game_time: int):
+    """Checks if too much time has passed, and if the player is allowed to enter a word or not
+
+    Args:
+        entered_time (int): Unix timestamp of when the action was done
+        game_time (int): Total time in the game in milliseconds
+
+    Returns:
+        bool: Returns True if time has not run out yet, and False if time has run out
+    """
+
+    if game_time + self._start_time > entered_time:
+      return False
+    else:
+      return True
+
+  
+  # def addWordWithTime(self, word: str, entered_time: int, game_time: int):
+  #   """Only adds word to the list if time has not run out yet
+
+  #   Args:
+  #       word (str): Word to be added
+  #       entered_time (int): Unix time milliseconds when the time was entered
+  #       game_time (int): Total amount of time in the game in seconds. Used with self._start_time to determine if the word should be added or not.
+    
+  #   Returns True of word was added, False if it wasn't
+  #   """
+
+  #   if game_time * 1000 + self._start_time > entered_time:
+  #     return False
+  #   else:
+  #     return self.addWord(word)
   
   def addWord(self, word: str):
-    if word not in (self.approved_words):
-      return False
+    if (word in self.approved_words) or (word in self.rejected_words):
+      return WordReason.ALREADY_ADDED
     elif len(word) < 3:
-      return self.addRejected(word, WordReason.TOO_SHORT)
+      if self.addRejected(word, WordReason.TOO_SHORT):
+        return WordReason.TOO_SHORT
+      else:
+        return WordReason.ALREADY_ADDED
     else:
       self.approved_words.append(word)
-      return True
+      return WordReason.ACCEPTED
   
   def addRejected(self, word: str, reason: WordReason):
+    """Adds a word that has been rejected.
+
+    Args:
+        word (str): Word to be added
+        reason (WordReason): Reason the word has been rejected
+
+    Returns:
+        bool: Returns False if the word has already been added to the list, and True if it has not been added yet.
+    """
     if word in self.rejected_words:
       return False
     else:
@@ -181,13 +233,13 @@ class BogglePlayer(Player):
           self.score += word_score
     return self.score
 
-class BoggleGame:
-  def __init__(self, width: int, height: int):
+class BoggleGame(Game):
+  def __init__(self, width: int, height: int, game_time: int):
     self._board = BoggleBoard(width=width, height=height)
-    self.players = dict()
-  
-  def addPlayer(self, id, name: str = ''):
-    self.players[id] = BogglePlayer(id, name)
+    self.width = width
+    self.height = height
+    self._game_time = game_time * 1000
+    super().__init__()
 
   def genGame(self, word_data: str):
     self._board.genGame(word_data=word_data)
@@ -197,14 +249,34 @@ class BoggleGame:
     basic_board = self._board.basic_board
     return basic_board
   
-  def enteredWord(self, id, word):
-    if word in self._board.word_list:
-      return self.players[id].addWord(word)
-    elif word in self._board.all_words:
-      return self.players[id].addRejected(word, WordReason.NOT_FOUND)
-    else:
-      return self.players[id].addRejected(word, WordReason.NOT_A_WORD)
+  def enteredWord(self, id, word, entered_time) -> WordReason:
+    """Adds word to the word list
+
+    Args:
+        id (str): Player ID
+        word (str): Word to be added
+        entered_time (int): Unix time in ms when word was entered
     
+    Returns:
+      bool: Returns True if word was accepted, False if rejected
+    """
+    
+    player = self.players[id]
+    if not player.withinTime(entered_time, self._game_time):
+      return WordReason.NO_TIME
+    elif word in self._board.word_list: # True if word is in current board
+      return self.players[id].addWord(word)
+    elif word in self._board.all_words: # It is a real word, but not on the board
+      if self.players[id].addRejected(word, WordReason.NOT_FOUND):
+        return WordReason.NOT_FOUND
+      else:
+        return WordReason.ALREADY_ADDED
+    else:
+      if self.players[id].addRejected(word, WordReason.NOT_A_WORD):
+        return WordReason.NOT_A_WORD
+      else:
+        return WordReason.ALREADY_ADDED
+  
   def getPlayerWords(self, id):
     player = self.players[id]
     return {

@@ -4,7 +4,7 @@ from game import room
 from game.room import GameRoom
 import google.cloud.logging
 # import google.oauth2.id_token
-from game.boggle import BoggleGame, BogglePlayer
+from game.boggle import BoggleGame, BogglePlayer, WordReason
 import random
 import string
 
@@ -37,24 +37,41 @@ class MemoryStorage:
   def __init__(self):
     self.data = dict()
 
-  def set(self, room_code, boggle_game):
-      self.data[room_code] = json.dumps(boggle_game)
-  def get(self, room_code):
-      return json.loads(self.data[room_code])
+  def set(self, room_code, game_room):
+    self.data[room_code] = json.dumps(game_room)
+  def get(self, room_code) -> GameRoom:
+    """Given a game code, returns a game room
+
+    Args:
+        room_code (str): Game code
+
+    Returns:
+        GameRoom: Game room with that code
+    """
+    return json.loads(self.data[room_code])
   def getAndSet(self, room_code, bool_func, new_val_func):
     if (bool_func(room_code)):
-      new_val_func(room_code)
+      game_room = self.get(room_code)
+      return new_val_func(game_room)
     pass
 
 
 room_storage = MemoryStorage()
+
+def roomExists(room_code):
+  try:
+    game_room = room_storage.get(room_code)
+  except:
+    return False
+  return True
 
 # Takes a room code, generates a new player ID, and adds that player to the room and the game. Returns the player ID, so the player can use that to send new commands
 def addPlayer(room_code: str):
   global room_storage
   game_room = room_storage.data[room_code]
   player_id = ''.join(random.choice(code_chars) for i in range(8))
-  game_room.addPlayer(player_id)
+  new_player = BogglePlayer(player_id)
+  game_room.addPlayer(new_player)
   return player_id
 
 def genCode(length: int):
@@ -108,7 +125,8 @@ async def createGame(request: Request):
   room_code = headers['room_code']
   width = int(headers['width'])
   height = int(headers['height'])
-  boggle_game = BoggleGame(width=width, height=height)
+  time = int(headers['time'])
+  boggle_game = BoggleGame(width=width, height=height, game_time=time)
   game_room = room_storage.data[room_code]
   game_room.addGame(boggle_game)
   current_folder = dirname(realpath(__file__))
@@ -133,11 +151,11 @@ async def createGame(request: Request):
 # TODO: QUESTION: In JSON, is it better to use underscores, or camel case
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
 @app.post('/join-game')
-async def getGame(request: Request):
+async def joinGame(request: Request):
   global room_storage
-  boggle_game = getGame(room_code)
   headers = request.headers
   room_code = headers['room_code']
+  boggle_game = getGame(room_code)
   player_id = addPlayer(room_code)
   content = getGameParameters(boggle_game)
   content['player_id'] = player_id
@@ -212,6 +230,22 @@ async def isStarted(request: Request):
   
   return response
 
+# Stores the timestamp of when the player started the game. This is used to determine when they are no longer allowed to submit words because time ran out, while accounting for slower internet
+@app.post('/player-start')
+async def playerStart(request: Request):
+  global room_storage
+  headers = request.headers
+  room_code = headers['room_code']
+  player_id = headers['player_id']
+  timestamp = int(headers['timestamp'])
+
+  def ps(game_room: GameRoom):
+    player = game_room.players[player_id] # Return BogglePlayer
+    player.playerStarted(timestamp)
+    pass
+
+  # TODO: QUESTION: Is there a better way to have an anonymous function other than a lambda?
+  room_storage.getAndSet(room_code, roomExists, ps)
 
 
 @app.post('/add-word')
@@ -220,15 +254,45 @@ async def addWord(request: Request):
   headers = request.headers
   room_code = headers['room_code']
   player_id = headers['player_id']
-  boggle_game = getGame(room_code)
+  timestamp = headers['timestamp']
   word = headers['word']
-  add_result = boggle_game.enteredWord(player_id, word)
-  content = boggle_game.getPlayerWords(player_id)
+
+  def aw(game_room: GameRoom) -> WordReason:
+    boggle_game = game_room.game
+    return boggle_game.enteredWord(player_id, word, timestamp)
+  
+  word_reason = room_storage.getAndSet(room_code, roomExists, aw)
+  content = dict()
+
+  if word_reason is WordReason.ACCEPTED:
+    content['reason'] = 'ACCEPTED'
+    status_code = 201
+  elif word_reason is WordReason.TOO_SHORT:
+    content['reason'] = 'TOO_SHORT'
+    status_code = 406
+  elif word_reason is WordReason.NOT_FOUND:
+    content['reason'] = 'NOT_FOUND'
+    status_code = 404
+  elif word_reason is WordReason.NOT_A_WORD:
+    content['reason'] = 'NOT_A_WORD'
+    status_code = 404
+  elif word_reason is WordReason.SHARED_WORD:
+    content['reason'] = 'SHARED_WORD'
+    status_code = 406
+  elif word_reason is WordReason.NO_TIME:
+    content['reason'] = 'NO_TIME'
+    status_code = 406
+  elif word_reason is WordReason.ALREADY_ADDED:
+    content['reason'] = 'ALREADY_ADDED'
+    status_code = 406
+  else:
+    content['reason'] = 'UNKNOWN'
+
   response = JSONResponse(
     content,
     headers=send_headers
   )
-  response.status_code = 201
+  response.status_code = status_code
   return response
 
 # TODO: QUESTION: Is it better to have a post request, or have the game code in the URL?
