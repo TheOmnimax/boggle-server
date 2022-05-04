@@ -30,7 +30,7 @@ class BoggleSpace(BoardSpace):
     self.adjacent = []
     self.id = id
 
-  # TODO: How can I make the "space" argument of type "BoggleSpace"?
+  # TODO: QUESTION: How can I make the "space" argument of type "BoggleSpace"?
   def addAdjacent(self, space):
     self.adjacent.append(space)
 
