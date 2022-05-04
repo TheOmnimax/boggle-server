@@ -15,8 +15,9 @@ class JsonConverter:
 
   def objToJson(self, obj):
     obj_type = type(obj)
+    # logging.info(obj)
     type_str = obj_type.__name__
-    logging.info(f'Type: {type_str}')
+    # logging.info(f'Type: {type_str}')
     if obj_type is list:
       new_list = list()
       for item in obj:
@@ -32,10 +33,14 @@ class JsonConverter:
       for key in obj:
         new_dict[key] = self.objToJson(obj[key])
       return new_dict
-    elif (obj_type in [int,float,str]) or (obj == None):
+    elif (obj_type in [int,float,str,bool]) or (obj == None):
       return obj
     else:
-      new_dict = vars(obj)
+      try:
+        new_dict = vars(obj)
+      except TypeError:
+        logging.error(f'Object type: {obj_type.__name__}\nData:\n{obj}')
+        exit()
       for key in new_dict:
         new_dict[key] = self.objToJson(new_dict[key])
       type_str = obj_type.__name__
@@ -46,7 +51,7 @@ class JsonConverter:
 
   def jsonToObj(self, orig):
     orig_type = type(orig)
-    logging.info(f'Original type: {orig_type.__name__}')
+    # logging.info(f'Original type: {orig_type.__name__}')
 
     if orig == None:
       return None
@@ -75,7 +80,10 @@ class JsonConverter:
         for key in orig:
           new_dict[key] = self.jsonToObj(orig[key])
         return new_dict
-    elif orig_type in [int,float,str]:
+    elif orig_type in [int,float,str,bool]:
       return orig
     else:
+      logging.info('Type error:')
+      logging.info(f'Type: {orig_type}')
+      logging.info(f'Data:\n{orig}')
       raise TypeError
