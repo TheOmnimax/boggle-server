@@ -7,7 +7,7 @@ import google.cloud.logging
 from game.boggle import BoggleGame, BogglePlayer, WordReason
 import random
 import string
-from tools import dict_tools
+from tools.json_tools import JsonConverter
 
 from os.path import dirname, join, realpath
 
@@ -37,10 +37,11 @@ send_headers = {
 class MemoryStorage:
   def __init__(self):
     self.data = dict()
+    self.json_converter = JsonConverter()
 
   def set(self, game_room: GameRoom):
     room_code = game_room.room_code
-    self.data[room_code] = json.dumps(dict_tools.objToJson(game_room))
+    self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
   def get(self, room_code) -> GameRoom:
     """Given a game code, returns a game room
 
@@ -50,14 +51,19 @@ class MemoryStorage:
     Returns:
         GameRoom: Game room with that code
     """
-    return dict_tools.jsonToObj(json.loads(self.data[room_code]))
-  def getAndSet(self, room_code, predicate, new_val_func):
-    if (predicate(room_code)):
-      print('Found game!')
+    return self.json_converter.jsonToObj(json.loads(self.data[room_code]))
+  def getAndSet(self, room_code, predicate=None, new_val_func=None):
+    if (predicate == None) or (predicate(room_code)):
       game_room = self.get(room_code)
-      return new_val_func(game_room)
+      if new_val_func == None:
+        return 'No action given'
+      else:
+        data = new_val_func(game_room)
+        self.set(game_room)
+        return data
     else:
       print(f'Game room {room_code} not found')
+      return 'Game room not found'
 
 
 room_storage = MemoryStorage()
@@ -152,15 +158,23 @@ async def createGame(request: Request):
     
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id
+    print(game_room.game)
     return content
 
   
-  content = room_storage.getAndSet(room_code, roomExists, cg)
+  content = room_storage.getAndSet(room_code, new_val_func=cg)
+  logging.info(f'Game generated for game room {room_code}')
+  # if content == 'Game room not found':
+  #   content = {'error': f'Game room {room_code} not found'}
+  # else:
+  #   status_code = 201
 
   response = JSONResponse(
     content,
     headers=send_headers
     )
+  print('Content:')
+  print(content)
   return response
 
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
@@ -170,9 +184,12 @@ async def joinGame(request: Request):
   headers = request.headers
   room_code = headers['room_code']
   host_id = headers['host_id']
+  
+  logging.info(f'About to join game in game room {room_code}')
 
   def jg(game_room: GameRoom):
     boggle_game = game_room.game
+    logging.info(boggle_game)
     if host_id == game_room.host_id:
       boggle_game.addPlayer(host_id, host=True)
       player_id = host_id
