@@ -46,10 +46,10 @@ class MemoryStorage:
     try:
       room_code = game_room.room_code
       self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
-     except:
-       pass
-     finally:
-       self.lock.release()
+    except:
+      pass
+    finally:
+      self.lock.release()
         
   def get(self, room_code) -> GameRoom:
     """Given a game code, returns a game room
