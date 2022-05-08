@@ -98,6 +98,16 @@ def roomExists(room_code):
 def checkIfHost():
   pass
 
+async def getBody(request: Request) -> dict:  
+  body_raw = b''
+  async for chunk in request.stream():
+      body_raw += chunk
+
+  print(body_raw)
+  body = json.loads(body_raw)
+  return body
+
+
 # Takes a room code, generates a new player ID, and adds that player to the room and the game. Returns the player ID, so the player can use that to send new commands
 # def addPlayer(room_code: str):
 #   global room_storage
@@ -152,24 +162,39 @@ def getGameParameters(boggle_game: BoggleGame):
 # Receives the room code, creates a new boggle game. Sends back the game parameters to create a blank board, as well as the player ID
 @app.post('/create-game')
 async def createGame(request: Request):
+  logging.info('Python log: Preparing to create game...')
   global room_storage
+  logging.info('Python log: Got global var')
   headers = request.headers
-  room_code = headers['room_code']
-  width = int(headers['width'])
-  height = int(headers['height'])
-  time = int(headers['time'])
+
+  body = await getBody(request)
+
+  # for item in body:
+  #   logging.info(f'Header: {item}')
+  room_code = body['room_code']
+  width = int(body['width'])
+  height = int(body['height'])
+  time = int(body['time'])
+  logging.info('Python log: Got needed data.')
   boggle_game = BoggleGame(width=width, height=height, game_time=time)
+  logging.info('Python log: Game created.')
 
   def cg(game_room: GameRoom):
+    logging.info('Python log: Starting val function')
     game_room.addGame(boggle_game)
+    logging.info('Python log: Game added to game room')
     current_folder = dirname(realpath(__file__))
     with open(join(current_folder, 'data', 'word_list.txt')) as f:
       word_data = f.read()
       boggle_game.genGame(word_data)
     
+    logging.info('Python log: Got and applied word list')
+
     player_id = genCode(6)
     host_data = BogglePlayer(player_id)
+    logging.info('Python log: Preparing to add player')
     game_room.addPlayer(host_data, True)
+    logging.info('Python log: Player added')
     
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id
@@ -192,8 +217,9 @@ async def createGame(request: Request):
 async def joinGame(request: Request):
   global room_storage
   headers = request.headers
-  room_code = headers['room_code']
-  host_id = headers['host_id']
+  body = await getBody(request)
+  room_code = body['room_code']
+  host_id = body['host_id']
 
   def jg(game_room: GameRoom):
     boggle_game = game_room.game
@@ -235,8 +261,9 @@ async def joinGame(request: Request):
 async def startGame(request: Request):
   global room_storage
   headers = request.headers
-  room_code = headers['room_code']
-  player_id = headers['player_id']
+  body = await getBody(request)
+  room_code = body['room_code']
+  player_id = body['player_id']
   print(f'Player ID: {player_id}')
   def sg(game_room: GameRoom):
     boggle_game = game_room.game
@@ -271,7 +298,8 @@ async def startGame(request: Request):
 async def isStarted(request: Request):
   global room_storage
   headers = request.headers
-  room_code = headers['room_code']
+  body = await getBody(request)
+  room_code = body['room_code']
 
   game_room = room_storage.get(room_code)
   game_running = game_room.game.running
@@ -290,9 +318,10 @@ async def isStarted(request: Request):
 async def playerStart(request: Request):
   global room_storage
   headers = request.headers
-  room_code = headers['room_code']
-  player_id = headers['player_id']
-  timestamp = int(headers['timestamp'])
+  body = await getBody(request)
+  room_code = body['room_code']
+  player_id = body['player_id']
+  timestamp = int(body['timestamp'])
 
   def ps(game_room: GameRoom):
     player = game_room.players[player_id] # Return BogglePlayer
@@ -306,10 +335,11 @@ async def playerStart(request: Request):
 async def addWord(request: Request):
   global room_storage
   headers = request.headers
-  room_code = headers['room_code']
-  player_id = headers['player_id']
-  timestamp = headers['timestamp']
-  word = headers['word']
+  body = await getBody(request)
+  room_code = body['room_code']
+  player_id = body['player_id']
+  timestamp = body['timestamp']
+  word = body['word']
 
   def aw(game_room: GameRoom) -> WordReason:
     boggle_game = game_room.game
@@ -352,7 +382,7 @@ async def addWord(request: Request):
 @app.post('/get-results')
 async def getResults(request: Request):
   global room_storage
-  request.body()
+  body = await getBody(request)
   headers = request.headers
   room_code = headers['room_code']
   # boggle_game = getGame(room_code)
