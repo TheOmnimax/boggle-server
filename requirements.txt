@@ -1,4 +1,3 @@
-ebooklib
 Flask==2.0.2
 fastapi
 google
