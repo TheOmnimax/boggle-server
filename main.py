@@ -8,6 +8,7 @@ from game.boggle import BoggleGame, BogglePlayer, WordReason
 from tools.json_tools import JsonConverter
 from tools.randomization import genCode
 import threading
+from fastapi.middleware.cors import CORSMiddleware
 
 from os.path import dirname, join, realpath
 
@@ -18,10 +19,27 @@ import json
 
 logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
+
+
 client = google.cloud.logging.Client()
 client.setup_logging()
 
 app = FastAPI()
+
+origins = [
+    'http://localhost',
+    'http://localhost:8080',
+    'https://boggle-663ae.web.app',
+    'http://boggle-663ae.web.app',
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 send_headers = {
   'Access-Control-Allow-Origin': '*'
