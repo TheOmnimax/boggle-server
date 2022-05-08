@@ -1,14 +1,12 @@
 import logging
-from google.cloud import storage
-from game import room
+# from google.cloud import storage
+# from game import room
 from game.room import GameRoom
 import google.cloud.logging
 # import google.oauth2.id_token
 from game.boggle import BoggleGame, BogglePlayer, WordReason
 from tools.json_tools import JsonConverter
 from tools.randomization import genCode
-import random
-import string
 import threading
 
 from os.path import dirname, join, realpath
@@ -70,12 +68,17 @@ class MemoryStorage:
     self.lock.acquire()
     try:
       if (predicate == None) or (predicate(room_code)):
+        logging.info('Python log: About to get game room...')
         game_room = self.get(room_code)
+        logging.info('Python log: Game room retrieved!')
         if new_val_func == None:
           return 'No action given'
         else:
+          logging.info('Python log: Applying function...')
           data = new_val_func(game_room)
+          logging.info('Python log: About to dump data...')
           self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+          logging.info('Python log: Dump complete')
           return data
       else:
         print(f'Game room {room_code} not found')
@@ -123,6 +126,11 @@ async def getBody(request: Request) -> dict:
 #   game_room = room_storage.data[room_code]
 #   return game_room.game
 
+@app.middleware('http')
+async def mw(request: Request, call_next):
+  logging.info('In middleware')
+  return await call_next(request)
+
 @app.get('/')
 async def test(request: Request):
   return 'Welcome!'
@@ -134,9 +142,13 @@ async def test(request: Request):
 # Creates a new game, sends back the room code
 @app.post('/create-room')
 async def createRoom(request: Request):
+  logging.info('About to get room storage...')
   global room_storage
-  print('Creating room...')
+  logging.info('Creating room...')
   headers = request.headers
+  logging.info('Headers:')
+  for header in headers:
+    logging.info(header)
 
   room_code = genCode(6)
   game_room = GameRoom(room_code)
