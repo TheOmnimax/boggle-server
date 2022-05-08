@@ -7,6 +7,9 @@ import google.cloud.logging
 from game.boggle import BoggleGame, BogglePlayer, WordReason
 from tools.json_tools import JsonConverter
 from tools.randomization import genCode
+import random
+import string
+import threading
 
 from os.path import dirname, join, realpath
 
@@ -34,12 +37,20 @@ send_headers = {
 # TODO: Set up concurrency through locks
 class MemoryStorage:
   def __init__(self):
+    self.lock = threading.Lock()
     self.data = dict()
     self.json_converter = JsonConverter()
 
   def set(self, game_room: GameRoom):
-    room_code = game_room.room_code
-    self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+    self.lock.acquire()
+    try:
+      room_code = game_room.room_code
+      self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+     except:
+       pass
+     finally:
+       self.lock.release()
+        
   def get(self, room_code) -> GameRoom:
     """Given a game code, returns a game room
 
@@ -56,18 +67,23 @@ class MemoryStorage:
     except:
       exit()
   def getAndSet(self, room_code, predicate=None, new_val_func=None):
-    if (predicate == None) or (predicate(room_code)):
-      game_room = self.get(room_code)
-      if new_val_func == None:
-        return 'No action given'
+    self.lock.acquire()
+    try:
+      if (predicate == None) or (predicate(room_code)):
+        game_room = self.get(room_code)
+        if new_val_func == None:
+          return 'No action given'
+        else:
+          data = new_val_func(game_room)
+          self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+          return data
       else:
-        data = new_val_func(game_room)
-        self.set(game_room)
-        return data
-    else:
-      print(f'Game room {room_code} not found')
-      return 'Game room not found'
-
+        print(f'Game room {room_code} not found')
+        return 'Game room not found'
+    except:
+      pass
+    finally:
+      self.lock.release()
 
 room_storage = MemoryStorage()
 
