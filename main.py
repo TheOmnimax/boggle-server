@@ -243,17 +243,21 @@ async def startGame(request: Request):
     print(f'Host ID: {game_room.host_id}')
     if game_room.host_id == player_id:
       boggle_game.startGame()
-      return True
+      return {
+        'started': True,
+        'board': boggle_game.getBasicBoard()
+      }
     else:
-      return False
+      return {
+        'started': False,
+      }
 
-  game_started = room_storage.getAndSet(room_code, roomExists, sg)
+  content = room_storage.getAndSet(room_code, roomExists, sg)
 
+  game_started = content['started']
   if (game_started):
-    content = {}
     status_code = 201
   else:
-    content = {}
     status_code = 403
   response = JSONResponse(
     content,
