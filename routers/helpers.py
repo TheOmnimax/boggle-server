@@ -101,3 +101,5 @@ async def getBody(request: Request) -> dict:
 class PlayerCommand(BaseModel):
   room_code: str
   player_id: str
+
+room_storage = MemoryStorage()
