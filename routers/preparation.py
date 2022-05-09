@@ -1,5 +1,9 @@
+from sqlite3 import Timestamp
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+from pydantic import BaseModel
+from typing import Optional
 
 from game.room import GameRoom
 
@@ -9,14 +13,16 @@ from tools.randomization import genCode
 
 router = APIRouter()
 
+class HostCommand(BaseModel):
+  room_code: str
+  player_id: Optional[str] = None
+
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
 @router.post('/join-game')
-async def joinGame(request: Request):
+async def joinGame(body: HostCommand):
   global room_storage
-  headers = request.headers
-  body = await getBody(request)
-  room_code = body['room_code']
-  host_id = body['host_id']
+  room_code = body.room_code
+  host_id = body.player_id
 
   def jg(game_room: GameRoom):
     boggle_game = game_room.game
@@ -41,10 +47,12 @@ async def joinGame(request: Request):
 
 # Sent by the host to start the game
 @router.post('/start-game')
-async def startGame(request: Request):
+async def startGame(body: HostCommand):
   global room_storage
-  headers = request.headers
-  body = await getBody(request)
+  
+  room_code = body.room_code
+  player_id = body.player_id
+  
   room_code = body['room_code']
   player_id = body['player_id']
   print(f'Player ID: {player_id}')
@@ -96,15 +104,18 @@ async def isStarted(request: Request):
   
   return response
 
+class PlayerStart(BaseModel):
+  room_code: str
+  player_id: str
+  timestamp: int
+
 # Stores the timestamp of when the player started the game. This is used to determine when they are no longer allowed to submit words because time ran out, while accounting for slower internet
 @router.post('/player-start')
-async def playerStart(request: Request):
+async def playerStart(body: PlayerStart):
   global room_storage
-  headers = request.headers
-  body = await getBody(request)
-  room_code = body['room_code']
-  player_id = body['player_id']
-  timestamp = int(body['timestamp'])
+  room_code = body.room_code
+  player_id = body.player_id
+  timestamp = body.timestamp
 
   def ps(game_room: GameRoom):
     player = game_room.players[player_id] # Return BogglePlayer

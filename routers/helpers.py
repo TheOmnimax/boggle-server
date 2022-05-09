@@ -1,4 +1,6 @@
 import logging
+
+from pydantic import BaseModel
 from game.room import GameRoom
 from game.boggle import BoggleGame
 from tools.json_tools import JsonConverter
@@ -6,8 +8,6 @@ import threading
 
 from fastapi import Request
 import json
-from pydantic import BaseModel
-from typing import Optional
 
 send_headers = {
   'Access-Control-Allow-Origin': '*'
@@ -98,4 +98,6 @@ async def getBody(request: Request) -> dict:
   body = json.loads(body_raw)
   return body
 
-room_storage = MemoryStorage()
+class PlayerCommand(BaseModel):
+  room_code: str
+  player_id: str

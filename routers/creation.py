@@ -1,12 +1,11 @@
 import logging
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
 from os.path import dirname, join, realpath
 from pydantic import BaseModel
 from typing import Optional
 
-from .helpers import send_headers, room_storage, getGameParameters
+from .helpers import room_storage, getGameParameters
 
 from game.room import GameRoom
 from game.boggle import BoggleGame, BogglePlayer
@@ -17,7 +16,7 @@ router = APIRouter()
 
 # Creates a new game, sends back the room code
 @router.post('/create-room')
-async def createRoom(request: Request):
+async def createRoom():
   logging.info('About to get room storage...')
   global room_storage
   logging.info('Creating room...')
@@ -25,19 +24,12 @@ async def createRoom(request: Request):
   room_code = genCode(6)
   game_room = GameRoom(room_code)
   room_storage.set(game_room)
-  response = JSONResponse(
-    {
-    'room_code': room_code,
-    },
-    headers=send_headers
-    )
-  response.status_code = 201
   logging.info('Room created!')
   return {
     'room_code': room_code,
     }
 
-class GameConfig(BaseModel):
+class CreateGame(BaseModel):
   room_code: Optional[str] = None
   width: Optional[int] = None
   height: Optional[int] = None
@@ -45,7 +37,7 @@ class GameConfig(BaseModel):
 
 # Receives the room code, creates a new boggle game. Sends back the game parameters to create a blank board, as well as the player ID
 @router.post('/create-game')
-async def createGame(game_config: GameConfig):
+async def createGame(game_config: CreateGame):
   logging.info('Python log: Preparing to create game...')
   global room_storage
   logging.info('Python log: Got global var')
@@ -82,10 +74,6 @@ async def createGame(game_config: GameConfig):
   
   content = room_storage.getAndSet(room_code, new_val_func=cg)
 
-  response = JSONResponse(
-    content,
-    headers=send_headers
-    )
   print('Content:')
   print(content)
   return content

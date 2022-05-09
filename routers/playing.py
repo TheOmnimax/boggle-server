@@ -5,25 +5,28 @@ from fastapi.responses import JSONResponse
 from game.room import GameRoom
 from game.boggle import WordReason
 
+from pydantic import BaseModel
+from typing import Optional
+
 from .helpers import send_headers, room_storage, getBody, roomExists
 
 router = APIRouter()
 
+class AddWord(BaseModel):
+  room_code: str
+  player_id: str
+  timestamp: int
+  word: str
+
 @router.post('/add-word')
-async def addWord(request: Request):
+async def addWord(body: AddWord):
   global room_storage
-  headers = request.headers
-  body = await getBody(request)
-  room_code = body['room_code']
-  player_id = body['player_id']
-  timestamp = body['timestamp']
-  word = body['word']
 
   def aw(game_room: GameRoom) -> WordReason:
     boggle_game = game_room.game
-    return boggle_game.enteredWord(player_id, word, timestamp)
+    return boggle_game.enteredWord(body.player_id, body.word, body.timestamp)
   
-  word_reason = room_storage.getAndSet(room_code, roomExists, aw)
+  word_reason = room_storage.getAndSet(body.room_code, roomExists, aw)
   content = dict()
 
   if word_reason is WordReason.ACCEPTED:
@@ -50,21 +53,16 @@ async def addWord(request: Request):
   else:
     content['reason'] = 'UNKNOWN'
 
-  response = JSONResponse(
-    content,
-    headers=send_headers
-  )
-  response.status_code = status_code
-  return response
+  return content
 
+class RoomData(BaseModel):
+  room_code: str
+
+# TODO: Update with results
 @router.post('/get-results')
-async def getResults(request: Request):
+async def getResults(body: RoomData):
   global room_storage
-  body = await getBody(request)
-  headers = request.headers
-  room_code = headers['room_code']
-  # boggle_game = getGame(room_code)
-  response = JSONResponse({},
-    headers=send_headers)
-  return response
+  boggle_game = room_storage.get(body.room_code).game
+  content = dict()
+  return content
 
