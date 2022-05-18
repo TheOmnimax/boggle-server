@@ -30,10 +30,10 @@ async def createRoom():
     }
 
 class CreateGame(BaseModel):
-  room_code: Optional[str] = None
-  width: Optional[int] = None
-  height: Optional[int] = None
-  time: Optional[int] = None
+  room_code: str
+  width: int
+  height: int
+  time: int
 
 # Receives the room code, creates a new boggle game. Sends back the game parameters to create a blank board, as well as the player ID
 @router.post('/create-game')
