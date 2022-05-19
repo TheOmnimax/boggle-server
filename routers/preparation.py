@@ -1,4 +1,5 @@
-from sqlite3 import Timestamp
+import logging
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
@@ -19,10 +20,10 @@ class HostCommand(BaseModel):
 
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
 @router.post('/join-game')
-async def joinGame(body: HostCommand):
+async def joinGame(join_data: HostCommand):
   global room_storage
-  room_code = body.room_code
-  host_id = body.player_id
+  room_code = join_data.room_code
+  host_id = join_data.player_id
 
   def jg(game_room: GameRoom):
     boggle_game = game_room.game
@@ -36,13 +37,8 @@ async def joinGame(body: HostCommand):
     content['player_id'] = player_id
     return content
 
-  content = room_storage.getAndSet(room_code, roomExists, jg)
-  response = JSONResponse(
-    content,
-    headers=send_headers
-    )
-  response.status_code = 201
-  return response
+  content = room_storage.getAndSet(room_code, predicate=roomExists, new_val_func=jg)
+  return content
 
 
 # Sent by the host to start the game
@@ -53,12 +49,10 @@ async def startGame(body: HostCommand):
   room_code = body.room_code
   player_id = body.player_id
   
-  room_code = body['room_code']
-  player_id = body['player_id']
-  print(f'Player ID: {player_id}')
+  room_code = body.room_code
+  player_id = body.player_id
   def sg(game_room: GameRoom):
     boggle_game = game_room.game
-    print(f'Host ID: {game_room.host_id}')
     if game_room.host_id == player_id:
       boggle_game.startGame()
       return {
@@ -83,27 +77,40 @@ async def startGame(body: HostCommand):
   )
   response.status_code = status_code
 
-  return response
+  return content
+
+class RoomData(BaseModel):
+  room_code: str
 
 @router.post('/is-started')
-async def isStarted(request: Request):
-  global room_storage
-  headers = request.headers
-  body = await getBody(request)
-  room_code = body['room_code']
+async def isStarted(body: RoomData):
+  room_code = body.room_code
 
   game_room = room_storage.get(room_code)
   game_running = game_room.game.running
 
-  response = JSONResponse(
-    {
+  return {
     'running': game_running,
-    },
-    headers=send_headers
-    )
-  
-  return response
+    }
 
+@router.post('/get-game-data')
+async def isStarted(body: RoomData):
+  room_code = body.room_code
+  game_room = room_storage.get(room_code)
+  game = game_room.game
+  game_running = game.running
+  
+  if game_running:
+    basic_board = game.getBasicBoard()
+    return {
+      'running': True,
+      'board': basic_board
+    }
+  else:
+    return {
+      'running': False
+    }
+  
 class PlayerStart(BaseModel):
   room_code: str
   player_id: str
@@ -118,6 +125,16 @@ async def playerStart(body: PlayerStart):
   timestamp = body.timestamp
 
   def ps(game_room: GameRoom):
+    game = game_room.game
+    game_running = game.running
+
+    if game_running:
+      pass
+    else:
+      return {
+        'running': False
+      }
+
     player = game_room.players[player_id] # Return BogglePlayer
     player.playerStarted(timestamp)
     pass

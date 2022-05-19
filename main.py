@@ -1,4 +1,6 @@
 import logging
+from os.path import dirname, join, realpath
+
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,6 +8,7 @@ from fastapi import FastAPI, Request, APIRouter
 from routers import creation, preparation, playing, test
 
 logging.getLogger().addHandler(logging.StreamHandler()) # For testing
+
 
 client = google.cloud.logging.Client()
 client.setup_logging()
@@ -17,7 +20,7 @@ router = APIRouter()
 origins = [
     'http://localhost',
     'http://localhost:8080',
-    'http://localhost:59256',
+    'http://localhost:59189',
     'https://boggle-663ae.web.app',
     'http://boggle-663ae.web.app',
 ]

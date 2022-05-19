@@ -44,27 +44,23 @@ class MemoryStorage:
     try:
       return self.json_converter.jsonToObj(json.loads(self.data[room_code]))
     except:
-      exit()
+      return dict()
   def getAndSet(self, room_code, predicate=None, new_val_func=None):
     self.lock.acquire()
     try:
       if (predicate == None) or (predicate(room_code)):
-        logging.info('Python log: About to get game room...')
         game_room = self.get(room_code)
-        logging.info('Python log: Game room retrieved!')
         if new_val_func == None:
           return 'No action given'
         else:
-          logging.info('Python log: Applying function...')
           data = new_val_func(game_room)
-          logging.info('Python log: About to dump data...')
           self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
-          logging.info('Python log: Dump complete')
           return data
       else:
         logging.info(f'Game room {room_code} not found')
         return 'Game room not found'
     except:
+      logging.exception('Error')
       return {'error': 'Game room not found'}
     finally:
       self.lock.release()
