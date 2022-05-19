@@ -15,9 +15,7 @@ class JsonConverter:
 
   def objToJson(self, obj):
     obj_type = type(obj)
-    # logging.info(obj)
     type_str = obj_type.__name__
-    # logging.info(f'Type: {type_str}')
     if obj_type is list:
       new_list = list()
       for item in obj:
@@ -51,7 +49,6 @@ class JsonConverter:
 
   def jsonToObj(self, orig):
     orig_type = type(orig)
-    # logging.info(f'Original type: {orig_type.__name__}')
 
     if orig == None:
       return None
