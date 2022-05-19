@@ -1,6 +1,5 @@
 from .board import BoardSpace, Board
 from .dice import DiceBag
-print('Running...')
 from .player import Player
 from .room import Game, GameRoom
 from collections import OrderedDict
@@ -104,8 +103,6 @@ class BoggleBoard(Board):
           working_space.addAdjacent(self.board[w][h+1].id)
           if w < self.height - 1:
             working_space.addAdjacent(self.board[w+1][h+1].id)
-    print('Successfully generated board!')
-    print(self.basic_board)
     return on_dice
   
   
@@ -258,11 +255,15 @@ class BoggleGame(Game):
     self._game_time = game_time * 1000
     super().__init__()
 
+  def addPlayer(self, id, name: str = '', host: bool = False):
+    self.players[id] = BogglePlayer(id, name)
+    if host:
+      self.host_id = id
+
   def genGame(self, word_data: str):
     self._board.genGame(word_data=word_data)
   
   def getBasicBoard(self):
-    print(self._board)
     basic_board = self._board.basic_board
     return basic_board
   

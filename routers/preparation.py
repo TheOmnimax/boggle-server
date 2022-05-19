@@ -8,7 +8,7 @@ from typing import Optional
 
 from game.room import GameRoom
 
-from .helpers import send_headers, room_storage, getGameParameters, getBody, roomExists
+from .helpers import send_headers, room_storage, getGameParameters, roomExists
 
 from tools.randomization import genCode
 

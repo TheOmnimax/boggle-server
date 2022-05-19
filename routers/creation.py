@@ -55,13 +55,8 @@ async def createGame(game_config: CreateGame):
     
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id
-    print(game_room.game)
     return content
 
   
   content = room_storage.getAndSet(room_code, new_val_func=cg)
-
-  print('Content:')
-  print(type(content).__name__)
-  print(content)
   return content

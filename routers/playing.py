@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
+import logging
 
 from game.room import GameRoom
 from game.boggle import WordReason
@@ -8,7 +9,7 @@ from game.boggle import WordReason
 from pydantic import BaseModel
 from typing import Optional
 
-from .helpers import send_headers, room_storage, getBody, roomExists
+from .helpers import send_headers, room_storage, roomExists
 
 router = APIRouter()
 
@@ -20,8 +21,7 @@ class AddWord(BaseModel):
 
 @router.post('/add-word')
 async def addWord(body: AddWord):
-  global room_storage
-
+  logging.info(f'Adding word: {body.word}')
   def aw(game_room: GameRoom) -> WordReason:
     boggle_game = game_room.game
     return boggle_game.enteredWord(body.player_id, body.word, body.timestamp)

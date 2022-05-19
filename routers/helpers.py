@@ -39,8 +39,8 @@ class MemoryStorage:
     Returns:
         GameRoom: Game room with that code
     """
-    for key in self.data:
-      print(key)
+    # for key in self.data:
+    #   print(key)
     try:
       return self.json_converter.jsonToObj(json.loads(self.data[room_code]))
     except:
@@ -84,15 +84,6 @@ def getGameParameters(boggle_game: BoggleGame):
       'width': boggle_game.height,
       'time': 90
   }
-
-async def getBody(request: Request) -> dict:  
-  body_raw = b''
-  async for chunk in request.stream():
-      body_raw += chunk
-
-  print(body_raw)
-  body = json.loads(body_raw)
-  return body
 
 class PlayerCommand(BaseModel):
   room_code: str
