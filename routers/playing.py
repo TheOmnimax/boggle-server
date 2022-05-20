@@ -21,12 +21,12 @@ class AddWord(BaseModel):
 
 @router.post('/add-word')
 async def addWord(body: AddWord):
-  logging.info(f'Adding word: {body.word}')
   def aw(game_room: GameRoom) -> WordReason:
     boggle_game = game_room.game
     return boggle_game.enteredWord(body.player_id, body.word, body.timestamp)
   
   word_reason = room_storage.getAndSet(body.room_code, roomExists, aw)
+  print(f'Reason: {word_reason}')
   content = dict()
 
   if word_reason is WordReason.ACCEPTED:

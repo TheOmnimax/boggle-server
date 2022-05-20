@@ -6,6 +6,8 @@ from collections import OrderedDict
 from enum import Enum
 from tools.randomization import genCode
 
+import logging
+
 class BoggleBag(DiceBag):
   boggle_dice = ['AAEEGN', 'ABBJOO', 'ACHOPS', 'AFFKPS',
     'AOOTTW', 'CIMOTU', 'DEILRX', 'DELRVY',
@@ -26,7 +28,7 @@ class BoggleBag(DiceBag):
 
 class BoggleSpace(BoardSpace):
   def __init__(self, letter: str, id):
-    self.letter = letter
+    self.letter = letter.lower()
     self.adjacent = []
     self.id = id
 
@@ -72,8 +74,11 @@ class BoggleBoard(Board):
       for h in range(self.height):
         try:
           letter = roll_results[on_dice]
-          board_row.append(BoggleSpace(letter, on_dice))
+          new_space = BoggleSpace(letter, on_dice)
+          space_id = self.addSpace(new_space)
+          board_row.append(space_id) # Will store the space IDs, and reference them using the getSpace() method
           basic_row.append(letter)
+          
           on_dice += 1
         except IndexError:
           return on_dice*-1
@@ -82,33 +87,33 @@ class BoggleBoard(Board):
     
     for w in range(self.width):
       for h in range(self.height):
-        working_space = self.board[w][h]
+        working_space_id = self.board[w][h]
+        working_space = self.getSpace(working_space_id)
         if h > 0:
           if w > 0:
-            working_space.addAdjacent(self.board[w-1][h-1].id)
-          working_space.addAdjacent(self.board[w][h-1].id)
+            working_space.addAdjacent(self.board[w-1][h-1])
+          working_space.addAdjacent(self.board[w][h-1])
           if w < self.height - 1:
-            working_space.addAdjacent(self.board[w+1][h-1].id)
+            working_space.addAdjacent(self.board[w+1][h-1])
         
         
         if w > 0:
-          working_space.addAdjacent(self.board[w-1][h].id)
+          working_space.addAdjacent(self.board[w-1][h])
         if w < self.height - 1:
-          working_space.addAdjacent(self.board[w+1][h].id)
+          working_space.addAdjacent(self.board[w+1][h])
         
         
         if h < self.height - 1:
           if w > 0:
-            working_space.addAdjacent(self.board[w-1][h+1].id)
-          working_space.addAdjacent(self.board[w][h+1].id)
+            working_space.addAdjacent(self.board[w-1][h+1])
+          working_space.addAdjacent(self.board[w][h+1])
           if w < self.height - 1:
-            working_space.addAdjacent(self.board[w+1][h+1].id)
-    return on_dice
+            working_space.addAdjacent(self.board[w+1][h+1])
   
   
   def getWords(self, word_data: str):
-    boggle_word_finder = _BoggleWordFinder(word_data)
-    self.word_list = boggle_word_finder.findWords(self)
+    boggle_word_finder = _BoggleWordFinder(word_data, self)
+    self.word_list = boggle_word_finder.findWords()
     self.all_words = word_data.split(',')[1:-1]
     return self.word_list
 
@@ -120,24 +125,29 @@ class BoggleBoard(Board):
   
 
 class _BoggleWordFinder:
-  def __init__(self, word_data: str):
+  def __init__(self, word_data: str, boggle_board: BoggleBoard):
     self.word_data = word_data
     self._word_list = []
+    self._board = boggle_board
   
   def _buildWord(self, working_space: BoggleSpace, word_so_far: str = '', used_space_ids: list[int] = []):
-    adjacent_spaces = working_space.adjacent
-    for adj_id in adjacent_spaces:
-      adj = self._board.getSpace(adj_id)
-      if adj.id not in used_space_ids: # Skip if already used that space
-        testing_word = word_so_far + adj.letter
-        if ',' + testing_word in self.word_data: # Only check if start of word can be found
-          if (testing_word not in self._word_list) and (',' + testing_word + ',' in self.word_data): # Add to found words if not in word list and is a full word
-            self._word_list.append(testing_word)
-          used_space_ids.append(adj.id) # Indicate that that letter has been used, and should not be re-used in this sequence
-          self._buildWord(adj, testing_word, used_space_ids)
+    space_letter = working_space.letter
+    word_so_far = word_so_far + space_letter
+    used_space_ids.append(working_space.id)
+
+    
+    if ',' + word_so_far in self.word_data: # Stop checks if start of word can't be found at all
+      if (word_so_far not in self._word_list) and (',' + word_so_far + ',' in self.word_data): # Add to found words if not in word list and is a full word
+        self._word_list.append(word_so_far)
+
+      # Already confirmed at least start of word can be found, so now will add new letters and check them
+      adjacent_spaces = working_space.adjacent
+      for adj_id in adjacent_spaces:
+        if adj_id not in used_space_ids: # Skip if already used that space
+          adj_space = self._board.getSpace(adj_id)
+          self._buildWord(adj_space, word_so_far, used_space_ids)
   
-  def findWords(self, boggle_board: BoggleBoard):
-    self._board = boggle_board
+  def findWords(self):
     self._word_list = []
     for space_code in self._board.space_id_list:
       self._buildWord(self._board.getSpace(space_code))
