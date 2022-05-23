@@ -12,6 +12,8 @@ from game.boggle import BoggleGame, BogglePlayer
 
 from tools.randomization import genCode
 
+import json
+
 router = APIRouter()
 
 
@@ -47,7 +49,12 @@ async def createGame(game_config: CreateGame):
     game_room.addGame(boggle_game)
     with open(join(ROOT_FOLDER, 'data', 'word_list.txt')) as f:
       word_data = f.read()
-      boggle_game.genGame(word_data)
+    word_list = word_data.split(',')
+    
+    
+    with open(join(ROOT_FOLDER, 'data', 'word_index.json')) as f:
+      word_index = json.loads(f.read()) 
+    boggle_game.genGame(word_index=word_index, word_list=word_list)
 
     player_id = genCode(6)
     host_data = BogglePlayer(player_id)

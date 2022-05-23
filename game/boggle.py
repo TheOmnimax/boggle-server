@@ -111,46 +111,48 @@ class BoggleBoard(Board):
             working_space.addAdjacent(self.board[w+1][h+1])
   
   
-  def getWords(self, word_data: str):
-    boggle_word_finder = _BoggleWordFinder(word_data, self)
+  def getWords(self, word_index: dict, word_list: list[str]):
+    boggle_word_finder = _BoggleWordFinder(word_index, self)
     self.word_list = boggle_word_finder.findWords()
-    self.all_words = word_data.split(',')[1:-1]
+    self.all_words = word_list
     return self.word_list
 
-  def genGame(self, word_data: str):
+  def genGame(self, word_index: dict, word_list: list[str]):
     self.genDiceBag()
     self.genBoard()
-    self.getWords(word_data)
+    self.getWords(word_index=word_index, word_list=word_list)
 
   
 
 class _BoggleWordFinder:
-  def __init__(self, word_data: str, boggle_board: BoggleBoard):
-    self.word_data = word_data
+  def __init__(self, word_index: dict, boggle_board: BoggleBoard):
+    self.word_index = word_index
     self._word_list = []
     self._board = boggle_board
   
-  def _buildWord(self, working_space: BoggleSpace, word_so_far: str = '', used_space_ids: list[int] = []):
+  def _buildWord(self, working_space: BoggleSpace, word_so_far: str = '', used_space_ids: list[int] = [], working_dict: dict = dict()):
+    
     space_letter = working_space.letter
     word_so_far = word_so_far + space_letter
-    used_space_ids.append(working_space.id)
-
     
-    if ',' + word_so_far in self.word_data: # Stop checks if start of word can't be found at all
-      if (word_so_far not in self._word_list) and (',' + word_so_far + ',' in self.word_data): # Add to found words if not in word list and is a full word
+    
+    if space_letter in working_dict:
+      working_dict = working_dict[space_letter]
+      if 'word' in working_dict:
         self._word_list.append(word_so_far)
-
+    
+      used_space_ids.append(working_space.id)
       # Already confirmed at least start of word can be found, so now will add new letters and check them
       adjacent_spaces = working_space.adjacent
       for adj_id in adjacent_spaces:
         if adj_id not in used_space_ids: # Skip if already used that space
           adj_space = self._board.getSpace(adj_id)
-          self._buildWord(adj_space, word_so_far, used_space_ids)
+          self._buildWord(adj_space, word_so_far, used_space_ids, working_dict=working_dict)
   
   def findWords(self):
     self._word_list = []
     for space_code in self._board.space_id_list:
-      self._buildWord(self._board.getSpace(space_code))
+      self._buildWord(self._board.getSpace(space_code), working_dict=self.word_index)
     return self._word_list
 
 class WordReason(Enum):
@@ -270,8 +272,8 @@ class BoggleGame(Game):
     if host:
       self.host_id = id
 
-  def genGame(self, word_data: str):
-    self._board.genGame(word_data=word_data)
+  def genGame(self, word_index: dict, word_list: list[str]):
+    self._board.genGame(word_index=word_index, word_list=word_list)
   
   def getBasicBoard(self):
     basic_board = self._board.basic_board

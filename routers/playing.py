@@ -26,7 +26,6 @@ async def addWord(body: AddWord):
     return boggle_game.enteredWord(body.player_id, body.word, body.timestamp)
   
   word_reason = room_storage.getAndSet(body.room_code, roomExists, aw)
-  print(f'Reason: {word_reason}')
   content = dict()
 
   if word_reason is WordReason.ACCEPTED:

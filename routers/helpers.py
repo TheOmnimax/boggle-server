@@ -39,8 +39,6 @@ class MemoryStorage:
     Returns:
         GameRoom: Game room with that code
     """
-    # for key in self.data:
-    #   print(key)
     try:
       return self.json_converter.jsonToObj(json.loads(self.data[room_code]))
     except:
