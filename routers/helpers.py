@@ -80,7 +80,7 @@ def getGameParameters(boggle_game: BoggleGame):
   return {
       'height': boggle_game.width,
       'width': boggle_game.height,
-      'time': 90
+      'time': boggle_game.getGameTime()
   }
 
 class PlayerCommand(BaseModel):

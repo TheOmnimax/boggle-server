@@ -1,6 +1,6 @@
 from .board import BoardSpace, Board
 from .dice import DiceBag
-from .player import Player
+from .player import Player, TimedPlayer
 from .room import Game, GameRoom
 from collections import OrderedDict
 from enum import Enum
@@ -165,48 +165,16 @@ class WordReason(Enum):
   ALREADY_ADDED = 6
 
 
-class BogglePlayer(Player):
+class BogglePlayer(TimedPlayer):
   def __init__(self, id, name: str = ''):
     super().__init__(id, name)
     self.approved_words = []
     self.rejected_words = OrderedDict()
     self._start_time = 0
   
-  def playerStarted(self, timestamp: int):
-    self._start_time = timestamp
-  
-  def withinTime(self, entered_time: int, game_time: int):
-    """Checks if too much time has passed, and if the player is allowed to enter a word or not
-
-    Args:
-        entered_time (int): Unix timestamp of when the action was done
-        game_time (int): Total time in the game in milliseconds
-
-    Returns:
-        bool: Returns True if time has not run out yet, and False if time has run out
-    """
-
-    if game_time + self._start_time > entered_time:
-      return False
-    else:
-      return True
-
-  
-  # def addWordWithTime(self, word: str, entered_time: int, game_time: int):
-  #   """Only adds word to the list if time has not run out yet
-
-  #   Args:
-  #       word (str): Word to be added
-  #       entered_time (int): Unix time milliseconds when the time was entered
-  #       game_time (int): Total amount of time in the game in seconds. Used with self._start_time to determine if the word should be added or not.
-    
-  #   Returns True of word was added, False if it wasn't
-  #   """
-
-  #   if game_time * 1000 + self._start_time > entered_time:
-  #     return False
-  #   else:
-  #     return self.addWord(word)
+  # def addWordTimed(self, word: str, entered_time: int):
+  #   if self.withinTime(entered_time):
+  #     self.addWord(word)
   
   def addWord(self, word: str):
     if (word in self.approved_words) or (word in self.rejected_words):
@@ -236,7 +204,10 @@ class BogglePlayer(Player):
       self.rejected_words[word] = reason
       return True
   
-  def scorePlayer(self, shared_words):
+  def getApprovedWords(self):
+    return self.approved_words
+  
+  def scorePlayer(self, shared_words: list[str]):
     scoring = {
       3: 1,
       4: 1,
@@ -259,6 +230,7 @@ class BogglePlayer(Player):
           self.score += word_score
     return self.score
 
+# TODO: Add check for all players to see if the game is over for all of them yet
 class BoggleGame(Game):
   def __init__(self, width: int, height: int, game_time: int):
     self._board = BoggleBoard(width=width, height=height)
@@ -271,9 +243,16 @@ class BoggleGame(Game):
     self.players[id] = BogglePlayer(id, name)
     if host:
       self.host_id = id
+  
+  def getName(self, id):
+    return self.players[id].name
 
-  def genGame(self, word_index: dict, word_list: list[str]):
+  def genGame(self, word_index: dict, word_list: list[str], game_time: int = 90):
     self._board.genGame(word_index=word_index, word_list=word_list)
+    self._game_time = game_time
+  
+  def getGameTime(self):
+    return self._game_time
   
   def getBasicBoard(self):
     basic_board = self._board.basic_board
@@ -292,7 +271,7 @@ class BoggleGame(Game):
     """
     
     player = self.players[id]
-    if not player.withinTime(entered_time, self._game_time):
+    if not player.withinTime(entered_time):
       return WordReason.NO_TIME
     elif word in self._board.word_list: # True if word is in current board
       return self.players[id].addWord(word)
@@ -314,4 +293,81 @@ class BoggleGame(Game):
       'rejected': player.rejected_words
     }
   
-  # TODO: Add scoring based on shared words
+  def checkGameEnded(self):
+    """Check all players, and see if their time is up. If their time is up, then the game is over.
+
+    Returns:
+        bool: True if all player's time is up and game is over, False if there is at least one player left
+    """
+    for player_id in self.players:
+      player = self.players[player_id]
+      if player.checkWithinTime():
+        return False
+    return True
+
+  def scoreGame(self):
+    self.results = dict()
+    self.found_words = dict()
+    players = self.players
+
+    # Get shared words
+    for player_id in players:
+      player = player[player_id]
+      approved_words = player.getApprovedWords()
+      for word in approved_words:
+        if word in self.found_words:
+          self.found_words[word].append(player.id)
+        else:
+          self.found_words[word] = [player.id]
+    self.shared_words = []
+    for word in self.found_words:
+      if len(self.found_words[word]) > 1:
+        self.shared_words.append(word)
+
+    # Score players
+    for player_id in players:
+      player = player[player_id]
+      player.scorePlayer(self.shared_words)
+    
+    who_shared_words = dict() # Dict where key is the shared word, and value is a list of player names who shared that word
+    for word in self.found_words:
+      word_players = self.found_words[word] # IDs of players who found that word
+      if len(word_players) > 1:
+        player_names = list()
+        for player_id in word_players:
+          player_names.append(self.getName(player_id))
+        who_shared_words[word] = player_names
+    
+    # Calculated all scores. Now, will put into JSON format so it can be returned in an HTTP request.
+
+    player_data = list()
+    winner_names = []
+    winning_score = 1
+
+    for player_id in self.players:
+      player = self.players[player_id]
+      score_list = list(player.score_list.items())
+      p_data = {
+        'name': player.name,
+        'score_list': score_list,
+        'score': player.score
+      }
+      player_data.append(p_data)
+      if player.score > winning_score:
+        winner_names = [player.name]
+      elif player.score == winning_score:
+        winner_names.append(player.name)
+    
+    if len(winner_names) == 0:
+      winning_score = 0
+
+    self.score_data = { # Dict that can be returned to users
+      'shared_words': who_shared_words,
+      'player_data': player_data,
+      'winning_score': winning_score,
+      'winner_names': winner_names
+    }
+
+  # Should only call after scoreGame()
+  def getScores(self):
+    return self.score_data

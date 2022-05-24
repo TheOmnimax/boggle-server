@@ -135,9 +135,9 @@ async def playerStart(body: PlayerStart):
         'running': False
       }
 
-    player = game_room.players[player_id] # Return BogglePlayer
-    player.playerStarted(timestamp)
-    pass
+    player = game.players[player_id] # Return BogglePlayer
+    game_time = game.getGameTime() * 1000
+    player.playerStarted(timestamp, game_time)
 
   room_storage.getAndSet(room_code, roomExists, ps)
 

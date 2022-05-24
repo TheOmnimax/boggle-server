@@ -54,7 +54,8 @@ async def createGame(game_config: CreateGame):
     
     with open(join(ROOT_FOLDER, 'data', 'word_index.json')) as f:
       word_index = json.loads(f.read()) 
-    boggle_game.genGame(word_index=word_index, word_list=word_list)
+    boggle_game.genGame(word_index=word_index, word_list=word_list, game_time=game_config.time)
+    # TODO: Update game time to be customized by user
 
     player_id = genCode(6)
     host_data = BogglePlayer(player_id)
@@ -64,6 +65,5 @@ async def createGame(game_config: CreateGame):
     content['player_id'] = player_id
     return content
 
-  
   content = room_storage.getAndSet(room_code, new_val_func=cg)
   return content

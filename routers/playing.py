@@ -54,13 +54,49 @@ async def addWord(body: AddWord):
 
   return content
 
+class PlayerCheckIn(BaseModel):
+  room_code: str
+  player_id: str
+  timestamp: int
+
+@router.post('/check-in')
+async def checkIn(body: PlayerCheckIn):
+  player_id = body.player_id
+  logging.info(f'Check in at {body.timestamp}')
+
+  def ci(game_room: GameRoom):
+    content = dict()
+    boggle_game = game_room.game
+    player = boggle_game.players[player_id]
+    player.withinTime(body.timestamp)
+    game_ended = boggle_game.checkGameEnded()
+    content['ended'] = game_ended
+    return content
+  
+  content = room_storage.getAndSet(body.room_code, roomExists, ci)
+  print(content)
+  return content
+
+
 class RoomData(BaseModel):
   room_code: str
+
+@router.post('/check-ended')
+async def checkEnded(body: RoomData):
+
+  def ce(game_room: GameRoom):
+    content = dict()
+    boggle_game = game_room.game
+    game_ended = boggle_game.checkGameEnded()
+    content['ended'] = game_ended
+    return content
+  
+  content = room_storage.getAndSet(body.room_code, roomExists, ce)
+  return content
 
 # TODO: Update with results
 @router.post('/get-results')
 async def getResults(body: RoomData):
-  global room_storage
   boggle_game = room_storage.get(body.room_code).game
   content = dict()
   return content
