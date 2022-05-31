@@ -70,6 +70,8 @@ async def checkIn(body: PlayerCheckIn):
     player = boggle_game.players[player_id]
     player.withinTime(body.timestamp)
     game_ended = boggle_game.checkGameEnded()
+    if game_ended:
+      boggle_game.scoreGame()
     content['ended'] = game_ended
     return content
   
@@ -94,10 +96,5 @@ async def checkEnded(body: RoomData):
   content = room_storage.getAndSet(body.room_code, roomExists, ce)
   return content
 
-# TODO: Update with results
-@router.post('/get-results')
-async def getResults(body: RoomData):
-  boggle_game = room_storage.get(body.room_code).game
-  content = dict()
-  return content
+
 

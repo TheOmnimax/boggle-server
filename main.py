@@ -5,7 +5,7 @@ import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI, Request, APIRouter
-from routers import creation, preparation, playing, test
+from routers import creation, preparation, playing, results, test
 
 logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
@@ -41,6 +41,7 @@ async def mw(request: Request, call_next):
 app.include_router(creation.router)
 app.include_router(preparation.router)
 app.include_router(playing.router)
+app.include_router(results.router)
 app.include_router(test.router)
 
 if __name__ == '__main__':

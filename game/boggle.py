@@ -237,6 +237,7 @@ class BoggleGame(Game):
     self.width = width
     self.height = height
     self._game_time = game_time * 1000
+    self._game_scored = False
     super().__init__()
 
   def addPlayer(self, id, name: str = '', host: bool = False):
@@ -306,13 +307,17 @@ class BoggleGame(Game):
     return True
 
   def scoreGame(self):
+    if self._game_scored: # Ensure game is not scored too many times
+      return
+    self._game_scored
+
     self.results = dict()
     self.found_words = dict()
     players = self.players
 
     # Get shared words
     for player_id in players:
-      player = player[player_id]
+      player = players[player_id]
       approved_words = player.getApprovedWords()
       for word in approved_words:
         if word in self.found_words:
@@ -326,7 +331,7 @@ class BoggleGame(Game):
 
     # Score players
     for player_id in players:
-      player = player[player_id]
+      player = players[player_id]
       player.scorePlayer(self.shared_words)
     
     who_shared_words = dict() # Dict where key is the shared word, and value is a list of player names who shared that word

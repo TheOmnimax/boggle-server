@@ -16,7 +16,7 @@ class JsonConverter:
   def objToJson(self, obj):
     obj_type = type(obj)
     type_str = obj_type.__name__
-    if obj_type is list:
+    if (obj_type is list) or (obj_type is tuple):
       new_list = list()
       for item in obj:
         new_list.append(self.objToJson(item))
