@@ -1,5 +1,5 @@
-Flask==2.0.2
-fastapi
+Flask==2.0.3
+fastapi==0.75.0
 google
 google-cloud-datastore
 google-api-python-client
@@ -7,5 +7,4 @@ google-cloud
 google-cloud-storage==2.1.0
 google-cloud-logging==3.0.0
 gunicorn
-typing
-uvicorn
+uvicorn==0.17.6
