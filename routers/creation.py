@@ -34,6 +34,7 @@ class CreateGame(BaseModel):
   width: int
   height: int
   time: int
+  name: str
 
 # Receives the room code, creates a new boggle game. Sends back the game parameters to create a blank board, as well as the player ID
 @router.post('/create-game')
@@ -43,6 +44,7 @@ async def createGame(game_config: CreateGame):
   width = game_config.width
   height = game_config.height
   time = game_config.time
+  host_name = game_config.name
   boggle_game = BoggleGame(width=width, height=height, game_time=time)
 
   def cg(game_room: GameRoom):
@@ -58,7 +60,7 @@ async def createGame(game_config: CreateGame):
     # TODO: Update game time to be customized by user
 
     player_id = genCode(6)
-    host_data = BogglePlayer(player_id)
+    host_data = BogglePlayer(id=player_id, name=host_name)
     game_room.addPlayer(host_data, True)
     
     content = getGameParameters(boggle_game)

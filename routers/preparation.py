@@ -14,25 +14,30 @@ from tools.randomization import genCode
 
 router = APIRouter()
 
-class HostCommand(BaseModel):
+class JoinGame(BaseModel):
   room_code: str
+  name: str
   player_id: Optional[str] = None
+
 
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
 @router.post('/join-game')
-async def joinGame(join_data: HostCommand):
+async def joinGame(join_data: JoinGame):
   global room_storage
   room_code = join_data.room_code
   host_id = join_data.player_id
+  name = join_data.name
 
   def jg(game_room: GameRoom):
     boggle_game = game_room.game
     if host_id == game_room.host_id:
-      boggle_game.addPlayer(host_id, host=True)
+      boggle_game.addPlayer(host_id, name=name, host=True)
+      logging.info(f'Added player with name: {name}')
       player_id = host_id
-    else:
+    else: # TODO: Add check if player already in game so they can re-join
       player_id = genCode(8)
-      boggle_game.addPlayer(player_id)
+      boggle_game.addPlayer(id=player_id, name=name)
+      logging.info('Added player with name: {name}')
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id
     return content
@@ -40,6 +45,11 @@ async def joinGame(join_data: HostCommand):
   content = room_storage.getAndSet(room_code, predicate=roomExists, new_val_func=jg)
   return content
 
+
+
+class HostCommand(BaseModel):
+  room_code: str
+  player_id: str
 
 # Sent by the host to start the game
 @router.post('/start-game')
