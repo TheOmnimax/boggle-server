@@ -20,7 +20,8 @@ router = APIRouter()
 origins = [
     'http://localhost',
     'http://localhost:8080',
-    'http://localhost:59189',
+    'http://localhost:65528',
+    'https://localhost:65528',
     'https://boggle-663ae.web.app',
     'http://boggle-663ae.web.app',
 ]

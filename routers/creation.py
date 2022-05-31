@@ -19,9 +19,12 @@ router = APIRouter()
 
 ROOT_FOLDER = dirname(dirname(realpath(__file__)))
 
+class NoData(BaseModel):
+  pass
+
 # Creates a new game, sends back the room code
 @router.post('/create-room')
-async def createRoom():
+async def createRoom(data: NoData):
   room_code = genCode(6)
   game_room = GameRoom(room_code)
   room_storage.set(game_room)

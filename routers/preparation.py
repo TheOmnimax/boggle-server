@@ -29,7 +29,10 @@ async def joinGame(join_data: JoinGame):
   name = join_data.name
 
   def jg(game_room: GameRoom):
-    boggle_game = game_room.game
+    try:
+      boggle_game = game_room.game
+    except:
+      logging.info(game_room)
     if host_id == game_room.host_id:
       boggle_game.addPlayer(host_id, name=name, host=True)
       logging.info(f'Added player with name: {name}')

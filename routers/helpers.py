@@ -40,8 +40,16 @@ class MemoryStorage:
         GameRoom: Game room with that code
     """
     try:
-      return self.json_converter.jsonToObj(json.loads(self.data[room_code]))
+      raw_data = self.data[room_code]
+    except KeyError:
+      logging.warning(f'Room code {room_code} not found')
+      for code in self.data:
+        logging.info(code)
+      return dict()
+    try:
+      return self.json_converter.jsonToObj(json.loads(raw_data))
     except:
+      logging.exception('Unknown error')
       return dict()
   def getAndSet(self, room_code, predicate=None, new_val_func=None):
     self.lock.acquire()
