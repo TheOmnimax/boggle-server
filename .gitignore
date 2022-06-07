@@ -2,3 +2,7 @@
 tests.py
 times.txt
 times2.txt
+**/env/**
+**/testing/**
+notes.txt
+*.log

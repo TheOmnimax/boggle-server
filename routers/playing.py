@@ -62,7 +62,6 @@ class PlayerCheckIn(BaseModel):
 @router.post('/check-in')
 async def checkIn(body: PlayerCheckIn):
   player_id = body.player_id
-  logging.info(f'Check in at {body.timestamp}')
 
   def ci(game_room: GameRoom):
     content = dict()

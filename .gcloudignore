@@ -19,3 +19,8 @@ Pipfile.lock
 __pycache__/
 # Ignored by the build system
 /setup.cfg
+
+
+**/env/**
+notes.txt
+*.log

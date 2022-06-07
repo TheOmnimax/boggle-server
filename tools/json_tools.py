@@ -1,8 +1,10 @@
 import logging
 
 class JsonConverter:
-  def __init__(self) -> None:
+  def __init__(self, skipped_keys: list = []) -> None:
     self._accepted_tags = dict() # Will store all of the types used, so the dicts can be converted back to those types
+    self._layer = 0
+    self._skipped_keys = skipped_keys # These are for var names that are heavily nested, and can be skipped to save time
   
   def addAcceptedTag(self, class_type: type):
     type_str = class_type.__name__
@@ -14,24 +16,29 @@ class JsonConverter:
       self._accepted_tags[type_str] = class_type
 
   def objToJson(self, obj):
+    self._layer += 1
     obj_type = type(obj)
     type_str = obj_type.__name__
     if (obj_type is list) or (obj_type is tuple):
       new_list = list()
       for item in obj:
         new_list.append(self.objToJson(item))
+      self._layer -= 1
       return new_list
     elif obj_type is set:
       new_set = set()
       for item in obj:
         new_set.add(self.objToJson(item))
+      self._layer -= 1
       return new_set
     elif obj_type is dict:
       new_dict = dict()
       for key in obj:
         new_dict[key] = self.objToJson(obj[key])
+      self._layer -= 1
       return new_dict
     elif (obj_type in [int,float,str,bool]) or (obj == None):
+      self._layer -= 1
       return obj
     else:
       try:
@@ -40,11 +47,15 @@ class JsonConverter:
         logging.error(f'Object type: {obj_type.__name__}\nData:\n{obj}')
         exit()
       for key in new_dict:
-        new_dict[key] = self.objToJson(new_dict[key])
+        if key in self._skipped_keys:
+          new_dict[key] = new_dict[key]
+        else:
+          new_dict[key] = self.objToJson(new_dict[key])
       type_str = obj_type.__name__
       new_dict['type'] = type_str
       if type_str not in self._accepted_tags:
         self._accepted_tags[type_str] = obj_type
+      self._layer -= 1
       return new_dict
 
   def jsonToObj(self, orig):
@@ -80,7 +91,7 @@ class JsonConverter:
     elif orig_type in [int,float,str,bool]:
       return orig
     else:
-      logging.info('Type error:')
-      logging.info(f'Type: {orig_type}')
-      logging.info(f'Data:\n{orig}')
+      logging.error('Type error:')
+      logging.error(f'Type: {orig_type}')
+      logging.error(f'Data:\n{orig}')
       raise TypeError

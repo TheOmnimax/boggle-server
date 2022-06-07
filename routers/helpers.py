@@ -18,13 +18,14 @@ class MemoryStorage:
   def __init__(self):
     self.lock = threading.Lock()
     self.data = dict()
-    self.json_converter = JsonConverter()
+    self.json_converter = JsonConverter(skipped_keys=['word_index'])
 
   def set(self, game_room: GameRoom):
     self.lock.acquire()
     try:
       room_code = game_room.room_code
       self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+      logging.info(f'Set with room code {room_code}')
     except:
       pass
     finally:
@@ -60,7 +61,9 @@ class MemoryStorage:
           return 'No action given'
         else:
           data = new_val_func(game_room)
+          logging.info('Dumping data')
           self.data[room_code] = json.dumps(self.json_converter.objToJson(game_room))
+          logging.info('Dump complete')
           return data
       else:
         logging.info(f'Game room {room_code} not found')
