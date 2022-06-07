@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel
@@ -18,7 +18,6 @@ class JoinGame(BaseModel):
   room_code: str
   name: str
   player_id: Optional[str] = None
-
 
 # For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
 @router.post('/join-game')
@@ -47,8 +46,6 @@ async def joinGame(join_data: JoinGame):
 
   content = room_storage.getAndSet(room_code, predicate=roomExists, new_val_func=jg)
   return content
-
-
 
 class HostCommand(BaseModel):
   room_code: str

@@ -1,12 +1,14 @@
+from testing.tools import getHeapSize
+getHeapSize('Boggle start')
+
 from .board import BoardSpace, Board
 from .dice import DiceBag
-from .player import Player, TimedPlayer
-from .room import Game, GameRoom
+from .player import TimedPlayer
+from .room import Game
+from .word_game import word_trie
 from collections import OrderedDict
 from enum import Enum
 from tools.randomization import genCode
-
-import logging
 
 class BoggleBag(DiceBag):
   boggle_dice = ['AAEEGN', 'ABBJOO', 'ACHOPS', 'AFFKPS',
@@ -111,22 +113,21 @@ class BoggleBoard(Board):
             working_space.addAdjacent(self.board[w+1][h+1])
   
   
-  def getWords(self, word_index: dict, word_list: list[str]):
-    boggle_word_finder = _BoggleWordFinder(word_index, self)
-    self.word_list = boggle_word_finder.findWords()
-    self.all_words = word_list
+  def getWords(self):
+    boggle_word_finder = _BoggleWordFinder(self)
+    self.word_list = boggle_word_finder.findWords() # TODO: Update to a trie
+    # self.all_words = word_list
     return self.word_list
 
-  def genGame(self, word_index: dict, word_list: list[str]):
+  def genGame(self):
     self.genDiceBag()
     self.genBoard()
-    self.getWords(word_index=word_index, word_list=word_list)
+    self.getWords()
 
   
 
 class _BoggleWordFinder:
-  def __init__(self, word_index: dict, boggle_board: BoggleBoard):
-    self.word_index = word_index
+  def __init__(self, boggle_board: BoggleBoard):
     self._word_list = []
     self._board = boggle_board
   
@@ -152,7 +153,7 @@ class _BoggleWordFinder:
   def findWords(self):
     self._word_list = []
     for space_code in self._board.space_id_list:
-      self._buildWord(self._board.getSpace(space_code), working_dict=self.word_index)
+      self._buildWord(self._board.getSpace(space_code), working_dict=word_trie.word_index)
     return self._word_list
 
 class WordReason(Enum):
@@ -248,8 +249,8 @@ class BoggleGame(Game):
   def getName(self, id):
     return self.players[id].name
 
-  def genGame(self, word_index: dict, word_list: list[str], game_time: int = 90):
-    self._board.genGame(word_index=word_index, word_list=word_list)
+  def genGame(self, game_time: int = 90):
+    self._board.genGame()
     self._game_time = game_time
   
   def getGameTime(self):
@@ -276,13 +277,14 @@ class BoggleGame(Game):
       return WordReason.NO_TIME
     elif word in self._board.word_list: # True if word is in current board
       return self.players[id].addWord(word)
-    elif word in self._board.all_words: # It is a real word, but not on the board
-      if self.players[id].addRejected(word, WordReason.NOT_FOUND):
-        return WordReason.NOT_FOUND
-      else:
-        return WordReason.ALREADY_ADDED
     else:
-      if self.players[id].addRejected(word, WordReason.NOT_A_WORD):
+      word_exists = word_trie.checkWordExists(word)
+      if word_exists:
+        if self.players[id].addRejected(word, WordReason.NOT_FOUND):
+          return WordReason.NOT_FOUND
+        else:
+          return WordReason.ALREADY_ADDED
+      elif self.players[id].addRejected(word, WordReason.NOT_A_WORD): # True if word is not a real word
         return WordReason.NOT_A_WORD
       else:
         return WordReason.ALREADY_ADDED
@@ -376,3 +378,5 @@ class BoggleGame(Game):
   # Should only call after scoreGame()
   def getScores(self):
     return self.score_data
+
+getHeapSize('Boggle end')

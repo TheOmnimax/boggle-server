@@ -36,10 +36,6 @@ class TimedPlayer(Player):
     time_passed = entered_time - self._start_time
     self._remaining_time = self._game_time - time_passed
 
-    logging.info(f'Game time: {self._game_time}')
-    logging.info(f'Timed passed: {time_passed}')
-    logging.info(f'Remaining time: {self._remaining_time}')
-
     if self._remaining_time > 0:
       self._can_take_action = True
     else:
