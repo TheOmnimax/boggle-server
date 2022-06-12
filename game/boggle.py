@@ -1,6 +1,3 @@
-from testing.tools import getHeapSize
-getHeapSize('Boggle start')
-
 from .board import BoardSpace, Board
 from .dice import DiceBag
 from .player import TimedPlayer
@@ -379,4 +376,3 @@ class BoggleGame(Game):
   def getScores(self):
     return self.score_data
 
-getHeapSize('Boggle end')

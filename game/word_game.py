@@ -1,6 +1,7 @@
 import logging
-from os.path import dirname, join, realpath
 import json
+
+from google.cloud import storage
 
 class WordTrie:
   def __init__(self, word_index):
@@ -21,9 +22,11 @@ class WordTrie:
         logging.error(f'Searched for word "{word}", and found part of it, but retrieved word is "{retrieved_word}".')
         return False
 
-def trieFromFile(filepath) -> WordTrie:
-  with open(filepath) as f:
-    word_index = json.loads(f.read())
-  return WordTrie(word_index=word_index)
-  
-word_trie = trieFromFile(join(dirname(dirname(realpath(__file__))), 'data', 'word_index.json'))
+def trieFromFile() -> WordTrie:
+  gcs = storage.Client()
+  bucket = gcs.get_bucket('boggle-word-data')
+  trie_blob = bucket.blob('word_trie.json')
+  trie_data = json.loads(trie_blob.download_as_string())
+  return WordTrie(word_index=trie_data)
+
+word_trie = trieFromFile()

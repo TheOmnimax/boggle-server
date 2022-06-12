@@ -1,12 +1,9 @@
-from testing.tools import resetHeap, getHeapSize
 import logging
 logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
-resetHeap()
-
 from os import environ
 
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\ereader-341202-cde00806c15f.json'
+# environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\boggle-347503-b3513065ff13.json' # TESTING ONLY
 
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,8 +16,6 @@ from routers import creation, preparation, playing, results, test
 
 client = google.cloud.logging.Client()
 client.setup_logging()
-resetHeap()
-getHeapSize('Initial')
 
 app = FastAPI()
 
@@ -50,20 +45,12 @@ app.add_middleware(
 #   return await call_next(request)
 
 
-getHeapSize('Got middleware')
-
 app.include_router(creation.router)
 
 app.include_router(preparation.router)
-getHeapSize('Got preparation')
 app.include_router(playing.router)
-getHeapSize('Got playing')
 app.include_router(results.router)
-getHeapSize('Got results')
 app.include_router(test.router)
-getHeapSize('Got test')
-
-getHeapSize('After setup data')
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8080, debug=True)
