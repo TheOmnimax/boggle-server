@@ -40,3 +40,10 @@ class GameRoom:
       return True
     else:
       return False
+  
+  # Check if player is host, and has host privileges
+  def isHost(self, player_id: bool):
+    if player_id == self.host_id:
+      return True
+    else:
+      return False
