@@ -6,8 +6,8 @@ class Game:
     self.host_id = None
     self.running = False
   
-  def addPlayer(self, id, name: str = '', host: bool = False):
-    self.players[id] = Player(id, name)
+  def addPlayer(self, id, player: Player, host: bool = False):
+    self.players[id] = player
     if host:
       self.host_id = id
   

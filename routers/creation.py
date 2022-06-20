@@ -54,16 +54,11 @@ async def createGame(game_config: CreateGame):
     
     player_id = genCode(6)
     host_data = BogglePlayer(id=player_id, name=host_name)
-    
     game_room.addPlayer(host_data, True)
-    logging.info('Added player')
     
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id
-    logging.info('Got content')
     return content
 
-  logging.info('Getting and setting')
   content = room_storage.getAndSet(room_code, new_val_func=cg)
-  logging.info('Complete!')
   return content

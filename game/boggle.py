@@ -1,6 +1,7 @@
+import logging
 from .board import BoardSpace, Board
 from .dice import DiceBag
-from .player import TimedPlayer
+from .player import Player, TimedPlayer
 from .room import Game
 from .word_game import word_trie
 from collections import OrderedDict
@@ -237,11 +238,6 @@ class BoggleGame(Game):
     self._game_time = game_time * 1000
     self._game_scored = False
     super().__init__()
-
-  def addPlayer(self, id, name: str = '', host: bool = False):
-    self.players[id] = BogglePlayer(id, name)
-    if host:
-      self.host_id = id
   
   def getName(self, id):
     return self.players[id].name

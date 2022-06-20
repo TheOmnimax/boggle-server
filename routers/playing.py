@@ -75,7 +75,6 @@ async def checkIn(body: PlayerCheckIn):
     return content
   
   content = room_storage.getAndSet(body.room_code, roomExists, ci)
-  print(content)
   return content
 
 

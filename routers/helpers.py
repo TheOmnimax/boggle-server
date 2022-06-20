@@ -71,9 +71,7 @@ class MemoryStorage:
           return 'No action given'
         else:
           data = new_val_func(game_room)
-          logging.info('Dumping data')
           self._data[room_code] = json.dumps(self._json_converter.objToJson(game_room))
-          logging.info('Dump complete')
           return data
       else:
         logging.info(f'Game room {room_code} not found')
