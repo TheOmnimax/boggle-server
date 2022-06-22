@@ -6,8 +6,9 @@ class Game:
     self.host_id = None
     self.running = False
   
-  def addPlayer(self, id, name: str = '', host: bool = False):
-    self.players[id] = Player(id, name)
+  def addPlayer(self, player: Player, host: bool = False):
+    id = player.id
+    self.players[id] = player
     if host:
       self.host_id = id
   
@@ -24,19 +25,27 @@ class GameRoom:
   def addPlayer(self, player: Player, host: bool = False):
     self.players[player.id] = player
     if self.game != None:
-      self.game.addPlayer(player.id, player, host)
+      self.game.addPlayer(player, host)
     
     if host:
       self.host_id = player.id
   
   def addGame(self, game: Game):
     self.game = game
+    # TODO: Add host data
     for player_code in self.players:
-      self.game.addPlayer(player_code, self.players[player_code])
+      self.game.addPlayer(self.players[player_code])
   
   def startGame(self, player_id):
     if player_id == self.host_id:
       self.game.startGame()
+      return True
+    else:
+      return False
+  
+  # Check if player is host, and has host privileges
+  def isHost(self, player_id: bool):
+    if player_id == self.host_id:
       return True
     else:
       return False

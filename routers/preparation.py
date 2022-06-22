@@ -1,10 +1,9 @@
-import logging
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel
 from typing import Optional
+from game.boggle import BogglePlayer
 
 from game.room import GameRoom
 
@@ -14,34 +13,36 @@ from tools.randomization import genCode
 
 router = APIRouter()
 
-class JoinGame(BaseModel):
+class AddPlayer(BaseModel):
   room_code: str
   name: str
+
+@router.post('/add-player')
+async def addPlayer(data: AddPlayer):
+
+  def ap(game_room: GameRoom):
+    boggle_game = game_room.game
+    player_id = genCode(8)
+    player = BogglePlayer(name=data.name, id=player_id)
+    boggle_game.addPlayer(player=player)
+    return {'player_id': player_id}
+  
+  content = room_storage.getAndSet(data.room_code, predicate=roomExists, new_val_func=ap)
+  return content
+
+class JoinGame(BaseModel):
+  room_code: str
   player_id: Optional[str] = None
 
-# For guests, not hosts Receives the room code, generates anew player ID, adds that player ID to the room and the game. Sends back the player ID, as well as the game parameters for the game to create tehe blank board 
+# This should be called after the player has been added to the game. This sends the game data to the user
 @router.post('/join-game')
 async def joinGame(join_data: JoinGame):
-  global room_storage
   room_code = join_data.room_code
-  host_id = join_data.player_id
-  name = join_data.name
 
   def jg(game_room: GameRoom):
-    try:
-      boggle_game = game_room.game
-    except:
-      logging.info(game_room)
-    if host_id == game_room.host_id:
-      boggle_game.addPlayer(host_id, name=name, host=True)
-      logging.info(f'Added player with name: {name}')
-      player_id = host_id
-    else: # TODO: Add check if player already in game so they can re-join
-      player_id = genCode(8)
-      boggle_game.addPlayer(id=player_id, name=name)
-      logging.info('Added player with name: {name}')
+    boggle_game = game_room.game
     content = getGameParameters(boggle_game)
-    content['player_id'] = player_id
+    content['is_host'] = game_room.isHost(player_id=join_data.player_id)
     return content
 
   content = room_storage.getAndSet(room_code, predicate=roomExists, new_val_func=jg)
@@ -63,7 +64,7 @@ async def startGame(body: HostCommand):
   player_id = body.player_id
   def sg(game_room: GameRoom):
     boggle_game = game_room.game
-    if game_room.host_id == player_id:
+    if game_room.isHost(player_id):
       boggle_game.startGame()
       return {
         'started': True,

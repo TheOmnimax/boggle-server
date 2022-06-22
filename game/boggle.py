@@ -1,9 +1,7 @@
-from testing.tools import getHeapSize
-getHeapSize('Boggle start')
-
+import logging
 from .board import BoardSpace, Board
 from .dice import DiceBag
-from .player import TimedPlayer
+from .player import Player, TimedPlayer
 from .room import Game
 from .word_game import word_trie
 from collections import OrderedDict
@@ -240,11 +238,6 @@ class BoggleGame(Game):
     self._game_time = game_time * 1000
     self._game_scored = False
     super().__init__()
-
-  def addPlayer(self, id, name: str = '', host: bool = False):
-    self.players[id] = BogglePlayer(id, name)
-    if host:
-      self.host_id = id
   
   def getName(self, id):
     return self.players[id].name
@@ -308,10 +301,11 @@ class BoggleGame(Game):
         return False
     return True
 
+  # TODO: Fix scorer so gets actual winner
   def scoreGame(self):
     if self._game_scored: # Ensure game is not scored too many times
       return
-    self._game_scored
+    self._game_scored = True
 
     self.results = dict()
     self.found_words = dict()
@@ -361,6 +355,7 @@ class BoggleGame(Game):
       }
       player_data.append(p_data)
       if player.score > winning_score:
+        winning_score = player.score
         winner_names = [player.name]
       elif player.score == winning_score:
         winner_names.append(player.name)
@@ -379,4 +374,3 @@ class BoggleGame(Game):
   def getScores(self):
     return self.score_data
 
-getHeapSize('Boggle end')
