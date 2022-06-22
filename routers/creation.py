@@ -1,4 +1,3 @@
-import logging
 from fastapi import APIRouter
 
 from pydantic import BaseModel
@@ -21,7 +20,6 @@ async def createRoom(data: NoData):
   room_code = genCode(6)
   game_room = GameRoom(room_code)
   room_storage.set(game_room)
-  logging.info(f'Created room code {room_code}')
   return {
     'room_code': room_code,
     }
@@ -54,7 +52,7 @@ async def createGame(game_config: CreateGame):
     
     player_id = genCode(6)
     host_data = BogglePlayer(id=player_id, name=host_name)
-    game_room.addPlayer(host_data, True)
+    game_room.addPlayer(player=host_data, host=True)
     
     content = getGameParameters(boggle_game)
     content['player_id'] = player_id

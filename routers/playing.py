@@ -1,15 +1,11 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
-
-import logging
+from fastapi import APIRouter
 
 from game.room import GameRoom
 from game.boggle import WordReason
 
 from pydantic import BaseModel
-from typing import Optional
 
-from .helpers import send_headers, room_storage, roomExists
+from .helpers import room_storage, roomExists
 
 router = APIRouter()
 

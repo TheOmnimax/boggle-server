@@ -1,10 +1,9 @@
-import logging
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel
 from typing import Optional
+from game.boggle import BogglePlayer
 
 from game.room import GameRoom
 
@@ -24,8 +23,8 @@ async def addPlayer(data: AddPlayer):
   def ap(game_room: GameRoom):
     boggle_game = game_room.game
     player_id = genCode(8)
-    boggle_game.addPlayer(id=player_id, name=data.name)
-    logging.info('Added player with name: {name}')
+    player = BogglePlayer(name=data.name, id=player_id)
+    boggle_game.addPlayer(player=player)
     return {'player_id': player_id}
   
   content = room_storage.getAndSet(data.room_code, predicate=roomExists, new_val_func=ap)

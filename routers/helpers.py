@@ -28,14 +28,14 @@ class MemoryStorage:
     if room_code in self._data:
       return True
     else:
-      raise HTTPException(status_code=404, detail='Game room not found!')
+      message = f'Game room {room_code} not found!'
+      raise HTTPException(status_code=404, detail=message)
 
   def set(self, game_room: GameRoom):
     self._lock.acquire()
     try:
       room_code = game_room.room_code
       self._data[room_code] = json.dumps(self._json_converter.objToJson(game_room))
-      logging.info(f'Set with room code {room_code}')
     except:
       pass
     finally:

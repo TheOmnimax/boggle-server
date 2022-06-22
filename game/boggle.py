@@ -301,6 +301,7 @@ class BoggleGame(Game):
         return False
     return True
 
+  # TODO: Fix scorer so gets actual winner
   def scoreGame(self):
     if self._game_scored: # Ensure game is not scored too many times
       return
