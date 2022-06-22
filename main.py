@@ -1,14 +1,10 @@
 import logging
 logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 
-from os import environ
-
-environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\maxshaberman\\Documents\\Coding\\Keys\\boggle-347503-b3513065ff13.json' # TESTING ONLY
-
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
 
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, APIRouter
 from routers import creation, preparation, playing, results, test
 
 # TODO: Set up memory to work with datastore, test with emulator
@@ -22,10 +18,6 @@ app = FastAPI()
 router = APIRouter()
 
 origins = [
-    'http://localhost',
-    'http://localhost:8080',
-    'http://localhost:62964',
-    'https://localhost:62964',
     'https://boggle-663ae.web.app',
     'http://boggle-663ae.web.app',
 ]
@@ -37,13 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# @app.middleware('http')
-# async def mw(request: Request, call_next):
-#   logging.info('In middleware')
-#   getHeapSize('Middleware')
-#   return await call_next(request)
-
 
 app.include_router(creation.router)
 

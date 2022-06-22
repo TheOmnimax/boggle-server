@@ -29,6 +29,7 @@ class MemoryStorage:
       return True
     else:
       message = f'Game room {room_code} not found!'
+      logging.info(message)
       raise HTTPException(status_code=404, detail=message)
 
   def set(self, game_room: GameRoom):

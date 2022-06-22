@@ -305,7 +305,7 @@ class BoggleGame(Game):
   def scoreGame(self):
     if self._game_scored: # Ensure game is not scored too many times
       return
-    self._game_scored
+    self._game_scored = True
 
     self.results = dict()
     self.found_words = dict()
@@ -355,6 +355,7 @@ class BoggleGame(Game):
       }
       player_data.append(p_data)
       if player.score > winning_score:
+        winning_score = player.score
         winner_names = [player.name]
       elif player.score == winning_score:
         winner_names.append(player.name)
