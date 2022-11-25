@@ -133,10 +133,18 @@ class _BoggleWordFinder:
     
     space_letter = working_space.letter
     word_so_far = word_so_far + space_letter
-    
+    if space_letter == 'qu':
+      space_letter = 'q'
     
     if space_letter in working_dict:
       working_dict = working_dict[space_letter]
+      if space_letter == 'q':
+        if 'u' in working_dict:
+          working_dict = working_dict['u']
+          space_letter = 'u'
+        else:
+          return
+
       if 'word' in working_dict:
         self._word_list.append(word_so_far)
     
