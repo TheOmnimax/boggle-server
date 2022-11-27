@@ -145,7 +145,7 @@ class _BoggleWordFinder:
         else:
           return
 
-      if 'word' in working_dict:
+      if ('word' in working_dict) and (len(word_so_far) > 2):
         self._word_list.append(word_so_far)
     
       used_space_ids.append(working_space.id)
