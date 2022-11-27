@@ -371,11 +371,18 @@ class BoggleGame(Game):
     if len(winner_names) == 0:
       winning_score = 0
 
+    missed_words = []
+
+    for word in self._board.word_list:
+      if word not in self.found_words.keys():
+        missed_words.append(word)
+
     self.score_data = { # Dict that can be returned to users
       'shared_words': who_shared_words,
       'player_data': player_data,
       'winning_score': winning_score,
-      'winner_names': winner_names
+      'winner_names': winner_names,
+      'missed_words': missed_words
     }
 
   # Should only call after scoreGame()
