@@ -48,10 +48,11 @@ class BoggleBoard(Board):
     return self._spaces[id]
   
   def addSpace(self, new_space: BoggleSpace) -> str:
-    space_code = None
-    while (space_code == None) or (space_code in self._spaces):
-      # It is extrememely unlikely that a space code will already exist, but it is good to check, just in case!
-      space_code = genCode(4)
+    # space_code = None
+    # while (space_code == None) or (space_code in self._spaces):
+    #   # It is extrememely unlikely that a space code will already exist, but it is good to check, just in case!
+    #   space_code = genCode(4)
+    space_code = new_space.id
     self._spaces[space_code] = new_space
     self.space_id_list.append(space_code)
     return space_code
@@ -133,6 +134,7 @@ class _BoggleWordFinder:
     
     space_letter = working_space.letter
     word_so_far = word_so_far + space_letter
+    
     if space_letter == 'qu':
       space_letter = 'q'
     
@@ -148,15 +150,17 @@ class _BoggleWordFinder:
       if ('word' in working_dict) and (len(word_so_far) > 2):
         self._word_list.append(word_so_far)
     
+      used_space_ids = used_space_ids.copy()
       used_space_ids.append(working_space.id)
       # Already confirmed at least start of word can be found, so now will add new letters and check them
+
       adjacent_spaces = working_space.adjacent
       for adj_id in adjacent_spaces:
         if adj_id not in used_space_ids: # Skip if already used that space
           adj_space = self._board.getSpace(adj_id)
           self._buildWord(adj_space, word_so_far, used_space_ids, working_dict=working_dict)
   
-  def findWords(self):
+  def findWords(self) -> List[str]:
     self._word_list = []
     for space_code in self._board.space_id_list:
       self._buildWord(self._board.getSpace(space_code), working_dict=word_trie.word_index)
