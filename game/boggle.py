@@ -7,6 +7,7 @@ from .word_game import word_trie
 from collections import OrderedDict
 from enum import Enum
 from tools.randomization import genCode
+from typing import List
 
 class BoggleBag(DiceBag):
   boggle_dice = ['AAEEGN', 'ABBJOO', 'ACHOPS', 'AFFKPS',
