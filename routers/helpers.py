@@ -76,7 +76,7 @@ class MemoryStorage:
           return data
       else:
         logging.info(f'Game room {room_code} not found')
-        return GameError.room_not_found
+        return {'error': 'Game room not found'}
     except:
       logging.exception('Error')
       return {'error': 'Game room not found'}
@@ -86,9 +86,12 @@ class MemoryStorage:
 room_storage = MemoryStorage()
 
 def roomExists(room_code):
-  if room_storage.exists(room_code):
-    return True
-  else:
+  try:
+    if room_storage.exists(room_code):
+      return True
+    else:
+      return False
+  except HTTPException:
     return False
 
 def checkIfHost():
