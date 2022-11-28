@@ -24,7 +24,7 @@ class WordTrie:
 
 def trieFromFile() -> WordTrie:
   gcs = storage.Client()
-  bucket = gcs.get_bucket('boggle-word-data')
+  bucket = gcs.get_bucket('boggle-words-data')
   trie_blob = bucket.blob('word_trie.json')
   trie_data = json.loads(trie_blob.download_as_string())
   return WordTrie(word_index=trie_data)

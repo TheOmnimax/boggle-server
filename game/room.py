@@ -16,6 +16,8 @@ class Game:
     self.running = True
 
 class GameRoom:
+  """The top-level class. This is stored by the memory storage. It stores information about each game room that players can join. Each GameRoom will have a single Game.
+  """
   def __init__(self, room_code):
     self.room_code = room_code
     self.players = dict()

@@ -98,7 +98,16 @@ async def isStarted(body: RoomData):
   room_code = body.room_code
 
   game_room = room_storage.get(room_code)
-  game_running = game_room.game.running
+  if game_room == None:
+    return {
+      'running': False
+    }
+  try:
+    game_running = game_room.game.running
+  except:
+    return {
+      'running': False
+    }
 
   return {
     'running': game_running,

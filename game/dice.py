@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 class Dice:
   def __init__(self, sides: list):
@@ -20,5 +21,5 @@ class DiceBag:
   def shuffle(self):
     random.shuffle(self.dice)
   
-  def rollDice(self):
+  def rollDice(self) -> List:
     return [r[random.randrange(0, len(r))] for r in self.dice]

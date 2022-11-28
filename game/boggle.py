@@ -7,6 +7,7 @@ from .word_game import word_trie
 from collections import OrderedDict
 from enum import Enum
 from tools.randomization import genCode
+from typing import List
 
 class BoggleBag(DiceBag):
   boggle_dice = ['AAEEGN', 'ABBJOO', 'ACHOPS', 'AFFKPS',
@@ -48,10 +49,11 @@ class BoggleBoard(Board):
     return self._spaces[id]
   
   def addSpace(self, new_space: BoggleSpace) -> str:
-    space_code = None
-    while (space_code == None) or (space_code in self._spaces):
-      # It is extrememely unlikely that a space code will already exist, but it is good to check, just in case!
-      space_code = genCode(4)
+    # space_code = None
+    # while (space_code == None) or (space_code in self._spaces):
+    #   # It is extrememely unlikely that a space code will already exist, but it is good to check, just in case!
+    #   space_code = genCode(4)
+    space_code = new_space.id
     self._spaces[space_code] = new_space
     self.space_id_list.append(space_code)
     return space_code
@@ -134,21 +136,32 @@ class _BoggleWordFinder:
     space_letter = working_space.letter
     word_so_far = word_so_far + space_letter
     
+    if space_letter == 'qu':
+      space_letter = 'q'
     
     if space_letter in working_dict:
       working_dict = working_dict[space_letter]
-      if 'word' in working_dict:
+      if space_letter == 'q':
+        if 'u' in working_dict:
+          working_dict = working_dict['u']
+          space_letter = 'u'
+        else:
+          return
+
+      if ('word' in working_dict) and (len(word_so_far) > 2) and (word_so_far not in self._word_list):
         self._word_list.append(word_so_far)
     
+      used_space_ids = used_space_ids.copy()
       used_space_ids.append(working_space.id)
       # Already confirmed at least start of word can be found, so now will add new letters and check them
+
       adjacent_spaces = working_space.adjacent
       for adj_id in adjacent_spaces:
         if adj_id not in used_space_ids: # Skip if already used that space
           adj_space = self._board.getSpace(adj_id)
           self._buildWord(adj_space, word_so_far, used_space_ids, working_dict=working_dict)
   
-  def findWords(self):
+  def findWords(self) -> List[str]:
     self._word_list = []
     for space_code in self._board.space_id_list:
       self._buildWord(self._board.getSpace(space_code), working_dict=word_trie.word_index)
@@ -363,11 +376,18 @@ class BoggleGame(Game):
     if len(winner_names) == 0:
       winning_score = 0
 
+    missed_words = []
+
+    for word in self._board.word_list:
+      if word not in self.found_words.keys():
+        missed_words.append(word)
+
     self.score_data = { # Dict that can be returned to users
       'shared_words': who_shared_words,
       'player_data': player_data,
       'winning_score': winning_score,
-      'winner_names': winner_names
+      'winner_names': winner_names,
+      'missed_words': missed_words
     }
 
   # Should only call after scoreGame()
