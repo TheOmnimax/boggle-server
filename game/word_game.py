@@ -4,10 +4,13 @@ import json
 from google.cloud import storage
 
 class WordTrie:
+  """Stores the trie, and used to find if word exists.
+  """
   def __init__(self, word_index):
     self.word_index = word_index
   
   def checkWordExists(self, word):
+    print('Checking word:', word)
     working_dict = self.word_index
     for letter in word:
       if letter in working_dict:
@@ -23,6 +26,11 @@ class WordTrie:
         return False
 
 def trieFromFile() -> WordTrie:
+  """Generates a word trie
+
+  Returns:
+      WordTrie: Trie used for finding words
+  """
   gcs = storage.Client()
   bucket = gcs.get_bucket('boggle-words-data')
   trie_blob = bucket.blob('word_trie.json')

@@ -5,6 +5,8 @@ class Player:
     self.score = start_score
 
 class TimedPlayer(Player):
+  """Player of timed game, where their time remaining needs to be tracked.
+  """
   def __init__(self, id: str, name: str = '', start_score: int = 0):
     super().__init__(id, name, start_score)
     self._start_time = 0

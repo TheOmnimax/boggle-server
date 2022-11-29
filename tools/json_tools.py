@@ -1,6 +1,8 @@
 import logging
 
 class JsonConverter:
+  """Used for converting data models into JSON format and back, so it can be stored in memory.
+  """
   def __init__(self, skipped_keys: list = []) -> None:
     self._accepted_tags = dict() # Will store all of the types used, so the dicts can be converted back to those types
     self._layer = 0
