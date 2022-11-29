@@ -1,4 +1,4 @@
-# boggle-server
+# Boggle server
 
 This is the server for the [Boggle](https://github.com/TheOmnimax/boggle_flutter) app.
 
@@ -14,11 +14,11 @@ For every game, a Boggle board is generated, and a list of every possible word o
 
 Documentation files can be found in [this folder](https://github.com/TheOmnimax/boggle-server/tree/main/docs).
 
-**[data_flow](https://github.com/TheOmnimax/boggle-server/blob/main/docs/data_flow.md)**: Graphs describing the data workflow.
+**[Directories](https://github.com/TheOmnimax/boggle-server/blob/main/docs/directories.md)**: Overview of the (directories) folders used in this server.
 
-**[directories](https://github.com/TheOmnimax/boggle-server/blob/main/docs/directories.md)**: Overview of the (directories) folders used in this server.
+### Diagrams
 
-## System diagram
+#### System diagram
 
 ```mermaid
 graph LR
@@ -28,10 +28,18 @@ graph LR
   Internet--API request<br>from server-->Client
 ```
 
+#### More diagrams
+
+* [High-level architecture](/docs/diagrams/high-level_arch.md)
+* [User flow](/docs/diagrams/user_flow.md)
+* [Data flow](/docs/diagrams/data_flow.md)
+
 ## Future improvements
 
 Possible improvements for the future:
 
-* Allow to start new game without refreshing page
+* Allow to start new game without refreshing page.
 * Implement WebSockets instead of REST API polling for a faster experience.
 * Save game data using Google Datastore instead of memory for better reliability.
+* Penalize entering too many rejected words, to make sure not just entering random letters.
+* On results screen, add links for words so clicking one shows the definition.
