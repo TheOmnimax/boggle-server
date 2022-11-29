@@ -162,7 +162,7 @@ class _BoggleWordFinder:
         else:
           return
 
-      if ('word' in working_dict) and (len(word_so_far) > 2) and (word_so_far not in self._word_list):
+      if ('word' in working_dict) and (len(word_so_far) > 1) and (word_so_far not in self._word_list):
         self._word_list.append(word_so_far)
     
       used_space_ids = used_space_ids.copy()
@@ -426,7 +426,7 @@ class BoggleGame(Game):
     missed_words = []
 
     for word in self._board.word_list:
-      if word not in self.found_words.keys():
+      if (len(word) > 2) and (word not in self.found_words.keys()):
         missed_words.append(word)
 
     self.score_data = { # Dict that can be returned to users
