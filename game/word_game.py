@@ -10,7 +10,6 @@ class WordTrie:
     self.word_index = word_index
   
   def checkWordExists(self, word):
-    print('Checking word:', word)
     working_dict = self.word_index
     for letter in word:
       if letter in working_dict:
