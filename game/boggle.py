@@ -1,13 +1,11 @@
-import logging
 from .board import BoardSpace, Board
 from .dice import DiceBag
-from .player import Player, TimedPlayer
+from .player import TimedPlayer
 from .room import Game
 from .word_game import word_trie
 from collections import OrderedDict
 from enum import Enum
-from tools.randomization import genCode
-from typing import List
+from typing import List, Dict
 
 class BoggleBag(DiceBag):
   boggle_dice = ['AAEEGN', 'ABBJOO', 'ACHOPS', 'AFFKPS',
@@ -18,9 +16,15 @@ class BoggleBag(DiceBag):
     'HLNNRZ'] # https://stanford.edu/class/archive/cs/cs106x/cs106x.1132/handouts/17-Assignment-3-Boggle.pdf
   
   def collectDice(self, num_dice: int):
+    """Add dice to the dice bag. If the number of dice being added is not a multiple of 16, then it will pick the remaining dice randomly.
+
+    Args:
+        num_dice (int): Number of dice to add to the bag.
+    """
     for d in range(num_dice, 0, -16):
       self.dice.extend(self.boggle_dice)
     
+    # If there are still dice to add to the bag, then it will pick the remaining dice at random.
     if (d > 0):
       extra_bag = BoggleBag(self.boggle_dice)
       extra_bag.shuffle()
@@ -28,13 +32,19 @@ class BoggleBag(DiceBag):
         self.dice.append(extra_bag.dice[e])
 
 class BoggleSpace(BoardSpace):
+  """Boggle space on the board, which will contain a dice.
+  """
   def __init__(self, letter: str, id):
-    self.letter = letter.lower()
-    self.adjacent = []
-    self.id = id
+    self.letter = letter.lower() # Letter assigned to space
+    self.adjacent = [] # Which letters are adjacent to that space, creating a graph, which is used later to find all possible words
+    self.id = id # ID of the space, used to make sure the same space is not used twice when building a word.
 
-  # TODO: QUESTION: How can I make the "space" argument of type "BoggleSpace"?
   def addAdjacent(self, space_id: str):
+    """Add a space that is adjacent, so know where to look when finding words
+
+    Args:
+        space_id (str): ID of the adjacent space.
+    """
     self.adjacent.append(space_id)
 
 
@@ -43,22 +53,20 @@ class BoggleBoard(Board):
     self.width = width
     self.height = height
     self._spaces = dict() # This will be a list of all spaces, with the keys being IDs so they can easily be retrieved, and identify which spaces are adjacent
-    self.space_id_list = list()
+    self.space_id_list = list() # Used by _BoggleWordFinder to cycle through all spaces on the board
   
   def getSpace(self, id: str) -> BoggleSpace:
     return self._spaces[id]
   
   def addSpace(self, new_space: BoggleSpace) -> str:
-    # space_code = None
-    # while (space_code == None) or (space_code in self._spaces):
-    #   # It is extrememely unlikely that a space code will already exist, but it is good to check, just in case!
-    #   space_code = genCode(4)
     space_code = new_space.id
     self._spaces[space_code] = new_space
     self.space_id_list.append(space_code)
     return space_code
 
   def genDiceBag(self):
+    """Generate bag of dice based on number of spaces.
+    """
     self.dice_bag = BoggleBag()
     self.dice_bag.collectDice(self.width * self.height)
   
@@ -98,7 +106,6 @@ class BoggleBoard(Board):
           if w < self.height - 1:
             working_space.addAdjacent(self.board[w+1][h-1])
         
-        
         if w > 0:
           working_space.addAdjacent(self.board[w-1][h])
         if w < self.height - 1:
@@ -113,20 +120,27 @@ class BoggleBoard(Board):
             working_space.addAdjacent(self.board[w+1][h+1])
   
   
-  def getWords(self):
+  def getWords(self) -> List[str]:
+    """Generate list of all possible words on the board
+
+    Returns:
+        List[str]: List of words
+    """
     boggle_word_finder = _BoggleWordFinder(self)
-    self.word_list = boggle_word_finder.findWords() # TODO: Update to a trie
-    # self.all_words = word_list
+    self.word_list = boggle_word_finder.findWords()
     return self.word_list
 
   def genGame(self):
+    """Generate the game using the needed functions
+    """
     self.genDiceBag()
     self.genBoard()
     self.getWords()
 
-  
 
 class _BoggleWordFinder:
+  """Used to traverse the Boggle board and find all possible words.
+  """
   def __init__(self, boggle_board: BoggleBoard):
     self._word_list = []
     self._board = boggle_board
@@ -148,7 +162,7 @@ class _BoggleWordFinder:
         else:
           return
 
-      if ('word' in working_dict) and (len(word_so_far) > 2) and (word_so_far not in self._word_list):
+      if ('word' in working_dict) and (len(word_so_far) > 1) and (word_so_far not in self._word_list):
         self._word_list.append(word_so_far)
     
       used_space_ids = used_space_ids.copy()
@@ -168,6 +182,8 @@ class _BoggleWordFinder:
     return self._word_list
 
 class WordReason(Enum):
+  """Why a word is accepted or rejected by the game.
+  """
   ACCEPTED = 0
   TOO_SHORT = 1
   NOT_FOUND = 2
@@ -184,11 +200,16 @@ class BogglePlayer(TimedPlayer):
     self.rejected_words = OrderedDict()
     self._start_time = 0
   
-  # def addWordTimed(self, word: str, entered_time: int):
-  #   if self.withinTime(entered_time):
-  #     self.addWord(word)
   
-  def addWord(self, word: str):
+  def addWord(self, word: str) -> WordReason:
+    """Word entered by player, add to their list of words.
+
+    Args:
+        word (str): Word entered by player.
+
+    Returns:
+        WordReason: Reason word was accepted or rejected
+    """
     if (word in self.approved_words) or (word in self.rejected_words):
       return WordReason.ALREADY_ADDED
     elif len(word) < 3:
@@ -200,7 +221,7 @@ class BogglePlayer(TimedPlayer):
       self.approved_words.append(word)
       return WordReason.ACCEPTED
   
-  def addRejected(self, word: str, reason: WordReason):
+  def addRejected(self, word: str, reason: WordReason) -> bool:
     """Adds a word that has been rejected.
 
     Args:
@@ -216,10 +237,18 @@ class BogglePlayer(TimedPlayer):
       self.rejected_words[word] = reason
       return True
   
-  def getApprovedWords(self):
+  def getApprovedWords(self) -> List[str]:
     return self.approved_words
   
-  def scorePlayer(self, shared_words: list[str]):
+  def scorePlayer(self, shared_words: List[str]) -> int:
+    """When game is over, take their words, and score them.
+
+    Args:
+        shared_words (list[str]): List of words shared by other players, which will be scored as 0.
+
+    Returns:
+        int: Final score of player.
+    """
     scoring = {
       3: 1,
       4: 1,
@@ -242,7 +271,6 @@ class BogglePlayer(TimedPlayer):
           self.score += word_score
     return self.score
 
-# TODO: Add check for all players to see if the game is over for all of them yet
 class BoggleGame(Game):
   def __init__(self, width: int, height: int, game_time: int):
     self._board = BoggleBoard(width=width, height=height)
@@ -252,17 +280,35 @@ class BoggleGame(Game):
     self._game_scored = False
     super().__init__()
   
-  def getName(self, id):
+  def getName(self, id) -> str:
+    """Get name of player with that ID
+
+    Args:
+        id (str): Player ID
+
+    Returns:
+        str: Name of player
+    """
     return self.players[id].name
 
   def genGame(self, game_time: int = 90):
+    """Generate the game, so it is ready to play.
+
+    Args:
+        game_time (int, optional): How long the game should be. Defaults to 90.
+    """
     self._board.genGame()
     self._game_time = game_time
   
   def getGameTime(self):
     return self._game_time
   
-  def getBasicBoard(self):
+  def getBasicBoard(self) -> List[List[str]]:
+    """Retrtieves a basic version of the Boggle board, just the letters, with no adjacents or IDs.
+
+    Returns:
+        List[List[str]]: Basic version of Boggle board.
+    """
     basic_board = self._board.basic_board
     return basic_board
   
@@ -314,8 +360,9 @@ class BoggleGame(Game):
         return False
     return True
 
-  # TODO: Fix scorer so gets actual winner
   def scoreGame(self):
+    """After game is over, score the game, and store it in object property "score_data", which is retrieved later when requested.
+    """
     if self._game_scored: # Ensure game is not scored too many times
       return
     self._game_scored = True
@@ -379,7 +426,7 @@ class BoggleGame(Game):
     missed_words = []
 
     for word in self._board.word_list:
-      if word not in self.found_words.keys():
+      if (len(word) > 2) and (word not in self.found_words.keys()):
         missed_words.append(word)
 
     self.score_data = { # Dict that can be returned to users
@@ -390,7 +437,6 @@ class BoggleGame(Game):
       'missed_words': missed_words
     }
 
-  # Should only call after scoreGame()
-  def getScores(self):
+  def getScores(self) -> Dict:
     return self.score_data
 

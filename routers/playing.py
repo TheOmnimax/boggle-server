@@ -72,23 +72,3 @@ async def checkIn(body: PlayerCheckIn):
   
   content = room_storage.getAndSet(body.room_code, roomExists, ci)
   return content
-
-
-class RoomData(BaseModel):
-  room_code: str
-
-@router.post('/check-ended')
-async def checkEnded(body: RoomData):
-
-  def ce(game_room: GameRoom):
-    content = dict()
-    boggle_game = game_room.game
-    game_ended = boggle_game.checkGameEnded()
-    content['ended'] = game_ended
-    return content
-  
-  content = room_storage.getAndSet(body.room_code, roomExists, ce)
-  return content
-
-
-

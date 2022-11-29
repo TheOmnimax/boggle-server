@@ -4,8 +4,6 @@ logging.getLogger().addHandler(logging.StreamHandler()) # For testing
 import google.cloud.logging
 from fastapi.middleware.cors import CORSMiddleware
 
-from google.cloud import datastore
-
 from fastapi import FastAPI, APIRouter
 from routers import creation, preparation, playing, results, test
 
@@ -17,10 +15,6 @@ app = FastAPI()
 router = APIRouter()
 
 origins = [
-    'http://localhost',
-    'http://localhost:8080',
-    'http://localhost:59819',
-    'https://localhost:59819',
     'https://boggle-663ae.web.app',
     'http://boggle-663ae.web.app',
 ]
@@ -33,15 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# @app.middleware('http')
-# async def mw(request: Request, call_next):
-#   logging.info('In middleware')
-#   getHeapSize('Middleware')
-#   return await call_next(request)
-
-
 app.include_router(creation.router)
-
 app.include_router(preparation.router)
 app.include_router(playing.router)
 app.include_router(results.router)

@@ -22,4 +22,9 @@ class DiceBag:
     random.shuffle(self.dice)
   
   def rollDice(self) -> List:
+    """Roll the dice, and return a list of the results.
+
+    Returns:
+        List: List of results. Usually str, but could be int. For Boggle, it is always str.
+    """
     return [r[random.randrange(0, len(r))] for r in self.dice]

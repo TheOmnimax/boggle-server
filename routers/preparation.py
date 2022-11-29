@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel
 from typing import Optional
@@ -7,7 +6,7 @@ from game.boggle import BogglePlayer
 
 from game.room import GameRoom
 
-from .helpers import send_headers, room_storage, getGameParameters, roomExists
+from .helpers import room_storage, getGameParameters, roomExists
 
 from tools.randomization import genCode
 
@@ -34,7 +33,7 @@ class JoinGame(BaseModel):
   room_code: str
   player_id: Optional[str] = None
 
-# This should be called after the player has been added to the game. This sends the game data to the user
+# This should be called after the player has been added to the game. This sends the game data to the user, so a blank board can be generated, which players see before the game starts.
 @router.post('/join-game')
 async def joinGame(join_data: JoinGame):
   room_code = join_data.room_code
@@ -76,17 +75,6 @@ async def startGame(body: HostCommand):
       }
 
   content = room_storage.getAndSet(room_code, roomExists, sg)
-
-  game_started = content['started']
-  if (game_started):
-    status_code = 201
-  else:
-    status_code = 403
-  response = JSONResponse(
-    content,
-    headers=send_headers
-  )
-  response.status_code = status_code
 
   return content
 
@@ -160,4 +148,3 @@ async def playerStart(body: PlayerStart):
     player.playerStarted(timestamp, game_time)
 
   room_storage.getAndSet(room_code, roomExists, ps)
-
