@@ -9,3 +9,5 @@ google-cloud-logging==3.0.0
 google-cloud-profiler
 gunicorn
 uvicorn==0.17.6
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
+werkzeug>=3.1.5 # not directly required, pinned by Snyk to avoid a vulnerability
